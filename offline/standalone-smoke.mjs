@@ -1,0 +1,210 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'outputs');
+const html = fs.readFileSync(path.join(root, '掼蛋Arena_v0.15_单机版.html'), 'utf8');
+const { newGame, playCards, passTurn } = await import('../../outputs/guandan-offline-v0.15/lib/game/engine.js');
+const { chooseAiMove, legalMoves, observe } = await import('../../outputs/guandan-offline-v0.15/lib/game/ai.js');
+const { comboOptions } = await import('../../outputs/guandan-offline-v0.15/lib/game/rules.js');
+const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+assert.ok(script?.length, '单文件必须包含可执行脚本');
+assert.ok(!html.includes('src="http') && !html.includes('href="http'), '离线文件不得依赖外部网络资源');
+const data = new Map();
+const queue = [];
+const app = { innerHTML: '', addEventListener(_name, handler) { this.onClick = handler; } };
+const document = { querySelector(selector) { return selector === '#app' ? app : { addEventListener() {}, click() {} }; } };
+const context = { document, navigator: {}, AbortController, location: { protocol: 'file:', hostname: '' }, crypto: { getRandomValues(array) { array[0] = 4; array[1] = 7; return array; } }, localStorage: { getItem(k) { return data.get(k) ?? null; }, setItem(k,v) { data.set(k,v); } }, setTimeout(fn) { queue.push(fn); return queue.length; }, clearTimeout() {}, console };
+vm.runInNewContext(script, context, { filename: 'guandan-offline.html', timeout: 20000 });
+assert.ok(app.innerHTML.includes('单局 Arena'));
+assert.ok(app.innerHTML.includes('级牌 9 · 不升级、不贡还 · 随机首出'));
+assert.ok(app.innerHTML.includes('新一圈 · 自由领出') && app.innerHTML.includes('AI 决策来源'));
+assert.ok(app.innerHTML.includes('完全离线') && app.innerHTML.includes('本机接口（可选）'));
+assert.ok(app.innerHTML.includes('轮到你'));
+assert.ok(app.innerHTML.includes('新一圈 · 你领出'), '新一圈牌权应显示真实领出者');
+assert.equal((app.innerHTML.match(/class="hand-column"/g) || []).length, new Set(newGame(4, 9).players[0].hand.map(card => card.rank)).size, '默认应按点数叠成竖向牌列');
+assert.ok(html.includes('声明本手牌型') && html.includes('data-declare='), '含逢人配的多义牌型必须提供显式声明');
+assert.ok(html.includes('.card.suit-S') && html.includes('.card.suit-H') && html.includes('.card.suit-C') && html.includes('.card.suit-D'), '四个花色必须有独立配色');
+const firstCard = app.innerHTML.match(/data-card="([^"]+)"/)?.[1];
+assert.ok(firstCard, '手牌应该保留逐张点击能力');
+app.onClick({ target: { closest() { return { dataset: { card: firstCard }, disabled: false }; } } });
+assert.ok(app.innerHTML.includes(`data-card="${firstCard}" aria-pressed="true"`), '叠放的牌仍可选中');
+app.onClick({ target: { closest() { return { dataset: { card: firstCard }, disabled: false }; } } });
+assert.ok(app.innerHTML.includes(`data-card="${firstCard}" aria-pressed="false"`), '再次点击应取消选中');
+function click(action) { app.onClick({ target: { closest() { return { dataset: { action }, disabled: false }; } } }); }
+click('analyze');
+assert.ok(app.innerHTML.includes('正在计算'));
+for (let i = 0; i < 25 && !app.innerHTML.includes('组配对暗牌采样'); i++) queue.shift()();
+assert.ok(app.innerHTML.includes('20 组配对暗牌采样'));
+assert.ok(app.innerHTML.includes('analysis-verdict'), '模拟完成必须展示候选比较结论');
+click('hint');
+assert.ok(app.innerHTML.includes('正在生成建议'));
+await new Promise(setImmediate);
+assert.ok(app.innerHTML.includes('已选中 AI 建议'), `测试牌局首出应有可出建议；当前提示：${app.innerHTML.match(/<div class="notice[^>]*>(.*?)<\/div>/)?.[1] ?? '无'}`);
+click('play');
+assert.ok(data.size === 1, '出牌必须自动保存');
+for (let i = 0; i < 8 && queue.length; i++) { queue.shift()(); await new Promise(setImmediate); }
+click('prev');
+assert.ok(app.innerHTML.includes('逐步回放'));
+click('live');
+assert.ok(app.innerHTML.includes('单局 Arena'));
+vm.runInNewContext(script, context, { filename: 'guandan-offline-reload.html', timeout: 20000 });
+assert.ok(app.innerHTML.includes('单局 Arena'));
+assert.ok(JSON.parse(data.get('guandan-offline-single-deal-v2')).deals[0].actions.length >= 1);
+click('new');
+assert.ok(app.innerHTML.includes('再次点击“新开单局”'));
+click('new');
+assert.equal(JSON.parse(data.get('guandan-offline-single-deal-v2')).version, 2);
+assert.equal(JSON.parse(data.get('guandan-offline-single-deal-v2')).deals.length, 1);
+assert.equal(JSON.parse(data.get('guandan-offline-single-deal-v2')).deals[0].actions.length, 0);
+assert.equal(JSON.parse(data.get('guandan-offline-single-deal-v2')).deals[0].initial.level, 9);
+assert.equal(JSON.parse(data.get('guandan-offline-single-deal-v2')).deals[0].initial.turn, 0);
+click('ai-loopback');
+assert.equal(data.get('guandan-arena-ai-mode-v1'), 'loopback');
+click('hint');
+await new Promise(setImmediate);
+assert.ok(app.innerHTML.includes('已回退本地策略'), '本机服务不可用时提示不得卡死');
+click('ai-local');
+assert.equal(data.get('guandan-arena-ai-mode-v1'), 'local');
+const { findStraightFlushes } = await import('../../outputs/guandan-offline-v0.15/offline/hand-tools.js');
+let flushSeed = 0;
+for (let seed = 1; seed <= 1500; seed++) {
+  const state = newGame(seed, 9);
+  if (state.turn === 0 && findStraightFlushes(state.players[0].hand, state.level, null).length) { flushSeed = seed; break; }
+}
+assert.ok(flushSeed, '应找到含同花顺且自己先手的测试局面');
+const preferences = new Map();
+const secondApp = { innerHTML: '', addEventListener(_name, handler) { this.onClick = handler; } };
+const secondContext = { ...context, document: { querySelector(selector) { return selector === '#app' ? secondApp : { addEventListener() {} }; } },
+  crypto: { getRandomValues(array) { array[0] = flushSeed; array[1] = 7; return array; } },
+  localStorage: { getItem(key) { return preferences.get(key) ?? null; }, setItem(key, value) { preferences.set(key, value); } },
+  setTimeout() { return 1; } };
+vm.runInNewContext(script, secondContext, { filename: 'guandan-flush.html', timeout: 20000 });
+const secondClick = (dataset) => secondApp.onClick({ target: { closest() { return { dataset, disabled: false }; } } });
+assert.ok(secondApp.innerHTML.includes('拔同花顺 ('));
+secondClick({ action: 'pull-flush' });
+assert.ok(secondApp.innerHTML.includes('flush-option'));
+secondClick({ flush: '0' });
+assert.ok(secondApp.innerHTML.includes('已拔出：'));
+assert.equal((secondApp.innerHTML.match(/class="card [^\"]*selected[^\"]*"[^>]*aria-pressed="true"/g) || []).length, 5, '拔出的五张必须选中');
+secondClick({ action: 'order-suit' });
+assert.equal(preferences.get('guandan-offline-hand-order-v1'), 'suit');
+assert.equal((secondApp.innerHTML.match(/class="card [^\"]*selected[^\"]*"[^>]*aria-pressed="true"/g) || []).length, 5, '一键理牌应保留选中的五张实体牌');
+secondClick({ action: 'order-manual' });
+assert.equal(preferences.get('guandan-offline-hand-order-v1'), 'manual');
+assert.ok(secondApp.innerHTML.includes('完成理牌') && secondApp.innerHTML.includes('单独成列'));
+const manualCards = [...secondApp.innerHTML.matchAll(/data-card="([^"]+)"/g)].map(match => match[1]);
+assert.ok(manualCards.length >= 2);
+secondClick({ card: manualCards[0] });
+secondClick({ card: manualCards[1] });
+const manualKey = [...preferences.keys()].find(key => key.startsWith('guandan-offline-manual-v1-'));
+assert.ok(manualKey);
+assert.ok(JSON.parse(preferences.get(manualKey)).flat().includes(manualCards[0]));
+secondClick({ card: manualCards[0] });
+secondClick({ action: 'manual-new' });
+assert.deepEqual(JSON.parse(preferences.get(manualKey)).at(-1), [manualCards[0]]);
+secondClick({ action: 'order-manual' });
+assert.ok(secondApp.innerHTML.includes('已保留手动排布'));
+const wasSelected = secondApp.innerHTML.includes(`data-card="${manualCards[0]}" aria-pressed="true"`);
+secondClick({ card: manualCards[0] });
+assert.equal(secondApp.innerHTML.includes(`data-card="${manualCards[0]}" aria-pressed="true"`), !wasSelected, '完成理牌后仍可切换选牌状态');
+secondClick({ card: manualCards[0] });
+secondClick({ action: 'quick-moves' });
+assert.ok(secondApp.innerHTML.includes('quick-option'));
+secondClick({ quick: '0' });
+assert.ok(secondApp.innerHTML.includes('基础牌型候选'));
+vm.runInNewContext(script, secondContext, { filename: 'guandan-flush-reload.html', timeout: 20000 });
+assert.ok(secondApp.innerHTML.includes('已保留手动排布') && secondApp.innerHTML.includes('手动理牌'), '理牌偏好应恢复');
+assert.ok(secondApp.innerHTML.includes(`data-card="${manualCards[0]}"`));
+secondClick({ action: 'order-combo' });
+assert.equal(preferences.get('guandan-offline-hand-order-v1'), 'combo');
+assert.ok(secondApp.innerHTML.includes('按合法牌型分组') && secondApp.innerHTML.includes('combo-hand'));
+const groupedIds = JSON.parse(preferences.get(manualKey));
+assert.deepEqual(groupedIds.flat().slice().sort(), newGame(flushSeed, 9).players[0].hand.map(card => card.id).sort(), '一键按牌型分组不能丢牌');
+const groupIndex = groupedIds.findIndex(ids => ids.length > 1);
+assert.ok(groupIndex >= 0, '一键理牌应生成多张牌的组合');
+secondClick({ comboGroup: String(groupIndex) });
+assert.ok(groupedIds[groupIndex].every(id => secondApp.innerHTML.includes(`data-card="${id}" aria-pressed="true"`)), '点击组名应选中整组');
+secondClick({ comboGroup: String(groupIndex) });
+for (const id of groupedIds[groupIndex]) secondClick({ card: id });
+assert.ok(secondApp.innerHTML.includes('理成一组'));
+secondClick({ action: 'group-selection' });
+assert.deepEqual(JSON.parse(preferences.get(manualKey))[0].slice().sort(), groupedIds[groupIndex].slice().sort(), '选中的合法牌型应成为新牌组');
+secondClick({ action: 'order-manual' });
+assert.ok(secondApp.innerHTML.includes('完成理牌'), '牌型分组可继续手动调整');
+secondClick({ action: 'order-manual' });
+secondClick({ action: 'order-rank' });
+assert.equal(preferences.get('guandan-offline-hand-order-v1'), 'rank');
+assert.ok(secondApp.innerHTML.includes('同点数竖向叠放'), '一键理牌应恢复按点数竖叠');
+const wildIndex = findStraightFlushes(newGame(4, 9).players[0].hand, 9, null)
+  .findIndex(option => option.wildCount > 0 && comboOptions(option.cards, 9).length > 1);
+assert.ok(wildIndex >= 0, '测试牌局应含多义逢人配同花顺');
+const wildOption = findStraightFlushes(newGame(4, 9).players[0].hand, 9, null)[wildIndex];
+const wildData = new Map();
+const wildApp = { innerHTML: '', addEventListener(_name, handler) { this.onClick = handler; } };
+const wildContext = { ...context, document: { querySelector(selector) { return selector === '#app' ? wildApp : { addEventListener() {} }; } },
+  localStorage: { getItem(key) { return wildData.get(key) ?? null; }, setItem(key, value) { wildData.set(key, value); } }, setTimeout() { return 1; } };
+vm.runInNewContext(script, wildContext, { filename: 'guandan-wild-flush.html', timeout: 20000 });
+const wildClick = dataset => wildApp.onClick({ target: { closest() { return { dataset, disabled: false }; } } });
+wildClick({ action: 'pull-flush' });
+assert.ok(wildApp.innerHTML.includes(wildOption.label), '菜单应明确区分实体牌与逢人配的替代点数');
+wildClick({ flush: String(wildIndex) });
+assert.ok(!wildApp.innerHTML.includes('当前组合不是合法牌型') && !wildApp.innerHTML.includes('请先在下方声明'), '点选多义同花顺应自动声明对应强度');
+assert.ok(wildApp.innerHTML.includes('data-action="play" >出牌'), '规则认可的拔牌应可直接出牌');
+wildClick({ action: 'play' });
+const wildAction = JSON.parse(wildData.get('guandan-offline-single-deal-v2')).deals[0].actions[0];
+assert.equal(wildAction.declared.kind, 'straightFlush');
+assert.equal(wildAction.declared.mainRank, wildOption.high);
+assert.deepEqual(wildAction.cards.slice().sort(), wildOption.ids.slice().sort(), '实际出牌只能使用本人持有的五张实体牌');
+vm.runInNewContext(script, wildContext, { filename: 'guandan-wild-flush-reload.html', timeout: 20000 });
+assert.ok(wildApp.innerHTML.includes('逢人配声明'), '逢人配同花顺声明应可重放');
+let declarationSeed = 0, declaredIds = [];
+for (let seed = 4; seed < 2000; seed += 4) {
+  const hand = newGame(seed).players[0].hand;
+  const wild = hand.find(c => c.suit === 'H' && c.rank === 2);
+  const pairs = [...new Set(hand.filter(c => c.rank !== 2 && c.rank <= 14).map(c => c.rank))]
+    .map(rank => hand.filter(c => c.rank === rank)).filter(cards => cards.length >= 2);
+  if (wild && pairs.length >= 2) { declarationSeed = seed; declaredIds = [wild.id, ...pairs[0].slice(0, 2).map(c => c.id), ...pairs[1].slice(0, 2).map(c => c.id)]; break; }
+}
+assert.ok(declarationSeed, '需找到可双向声明的逢人配三带二');
+const declarationData = new Map();
+const declarationApp = { innerHTML: '', addEventListener(_name, handler) { this.onClick = handler; } };
+const declarationContext = { ...context, document: { querySelector(selector) { return selector === '#app' ? declarationApp : { addEventListener() {} }; } },
+  crypto: { getRandomValues(array) { array[0] = declarationSeed; array[1] = 0; return array; } },
+  localStorage: { getItem(key) { return declarationData.get(key) ?? null; }, setItem(key, value) { declarationData.set(key, value); } },
+  setTimeout() { return 1; } };
+vm.runInNewContext(script, declarationContext, { filename: 'guandan-declaration.html', timeout: 20000 });
+for (const id of declaredIds) declarationApp.onClick({ target: { closest() { return { dataset: { card: id }, disabled: false }; } } });
+assert.ok(declarationApp.innerHTML.includes('声明本手牌型'), '多义逢人配手牌必须出现声明控件');
+assert.ok(declarationApp.innerHTML.includes('请先在下方声明牌型与点数'));
+declarationApp.onClick({ target: { closest() { return { dataset: { declare: '1' }, disabled: false }; } } });
+assert.ok(!declarationApp.innerHTML.includes('请先在下方声明牌型与点数'));
+declarationApp.onClick({ target: { closest() { return { dataset: { action: 'play' }, disabled: false }; } } });
+const savedDeclaration = JSON.parse(declarationData.get('guandan-offline-single-deal-v2'));
+assert.ok(savedDeclaration.deals[0].actions[0].declared, '保存的动作需携带主动声明以供复盘');
+vm.runInNewContext(script, declarationContext, { filename: 'guandan-declaration-reload.html', timeout: 20000 });
+assert.ok(declarationApp.innerHTML.includes('逢人配声明'), '重载复盘后仍需展示牌型声明');
+const mobile = fs.readFileSync(path.join(root, 'guandan-mobile/offline/index.html'), 'utf8');
+assert.ok(mobile.includes('data-platform="android"') && mobile.includes('mobile.webmanifest') && mobile.includes('mobile-hand-link'), '手机版必须有手机标识、安装清单和手牌导航');
+assert.ok(!mobile.includes('src="http') && !mobile.includes('href="http'), '手机版首屏不能依赖第三方网络');
+const mobileScript = mobile.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+const mobileData = new Map([['guandan-arena-ai-mode-v1', 'loopback']]);
+const mobileApp = { innerHTML: '', addEventListener(_name, handler) { this.onClick = handler; } };
+let approvals = 0;
+const mobileContext = { ...context, document: { documentElement: { dataset: { platform: 'android' } }, querySelector(selector) { return selector === '#app' ? mobileApp : { addEventListener() {} }; } },
+  navigator: { clipboard: { async writeText() {} } }, localStorage: { getItem(k) { return mobileData.get(k) ?? null; }, setItem(k, value) { mobileData.set(k, value); } },
+  confirm() { approvals++; return approvals === 2; }, setTimeout() { return 1; } };
+assert.ok(mobileScript);
+vm.runInNewContext(mobileScript, mobileContext, { filename: 'guandan-mobile.html', timeout: 20000 });
+assert.ok(!mobileApp.innerHTML.includes('data-action="ai-loopback"') && mobileApp.innerHTML.includes('完全离线'), '手机版不能从旧存档恢复电脑本机网络 AI');
+assert.ok(mobileApp.innerHTML.includes('id="hand-panel"') && mobileApp.innerHTML.includes('id="replay"'), '手机快捷导航目标必须存在');
+const mobileClick = action => mobileApp.onClick({ target: { closest() { return { dataset: { action }, disabled: false }; } } });
+const initial = mobileData.get('guandan-offline-single-deal-v2');
+mobileClick('new');
+assert.equal(mobileData.get('guandan-offline-single-deal-v2'), initial, '取消新局不得覆盖存档');
+mobileClick('new');
+assert.ok(mobileData.has('guandan-offline-single-deal-v2'), '手机确定新局应自动保存');
+assert.equal(approvals, 2);
+console.log('离线浏览器与手机逻辑冒烟通过：出牌、回放、理牌、存档及手机 AI 断网/确认新局');

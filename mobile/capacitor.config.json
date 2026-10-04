@@ -1,0 +1,9 @@
+{
+  "appId": "cn.workbuddy.guandantrainer",
+  "appName": "掼蛋训练器",
+  "webDir": "offline",
+  "android": {
+    "backgroundColor": "#f4f2ec",
+    "allowMixedContent": false
+  }
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">掼蛋训练器</string>
+    <string name="title_activity_main">掼蛋训练器</string>
+    <string name="package_name">cn.workbuddy.guandantrainer</string>
+    <string name="custom_url_scheme">cn.workbuddy.guandantrainer</string>
+</resources>

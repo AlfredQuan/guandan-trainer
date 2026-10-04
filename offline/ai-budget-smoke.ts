@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { observe } from '../lib/game/ai';
+import { newGame } from '../lib/game/engine';
+import { buildAiRequest, decideSafely, localAiProvider, loopbackAiProvider } from './ai-gateway';
+const state=newGame(7001),request=buildAiRequest(observe(state,state.turn),'play','budget');
+const short={id:'short-budget',timeoutMs:10,async decide(){await new Promise(r=>setTimeout(r,40));return localAiProvider.decide(request);}};
+assert.equal((await decideSafely(request,short)).fallback,true,'provider deadline must be used');
+const long={id:'long-budget',timeoutMs:10000,async decide(){await new Promise(r=>setTimeout(r,1300));return localAiProvider.decide(request);}};
+assert.equal((await decideSafely(request,long)).fallback,false,'valid search after 1200ms must survive');
+assert.equal((await decideSafely(request,long,5)).fallback,true,'explicit caller deadline must win');
+assert.equal(loopbackAiProvider().timeoutMs,10000);
+assert.equal((await decideSafely(request,localAiProvider)).fallback,false);
+console.log('AI budgets: provider deadline, longer valid response, explicit override and local path passed');

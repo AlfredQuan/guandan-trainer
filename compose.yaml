@@ -1,0 +1,22 @@
+services:
+  web:
+    build: .
+    image: guandan-lab:local
+    init: true
+    restart: unless-stopped
+    ports:
+      - "${GUANDAN_BIND:-127.0.0.1:3000}:3000"
+    mem_limit: ${GUANDAN_MEMORY_LIMIT:-512m}
+    env_file:
+      - path: .env.local
+        required: false
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+    volumes:
+      - guandan-data:/data
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  guandan-data:

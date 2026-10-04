@@ -1,0 +1,2934 @@
+<!doctype html>
+<html lang="zh-CN" data-platform="android">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#f4f2ec" />
+  <meta name="description" content="完全本地运行的单人掼蛋练习与逐步回放" />
+  <title>掼蛋训练器 · 手机离线版</title>
+<style>/* 离线界面不依赖外部字体或图片资源。 */
+:root { font-family: "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif; color: #26342d; background: #f4f2ec; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .43; }
+.shell { max-width: 1600px; margin: auto; padding: 0 36px; min-height: 100dvh; }
+.topbar { height: 88px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #dddcd3; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; color: #fff; font-size: 21px; font-weight: 800; background: #275a48; }
+.brand b { display: block; font-size: 17px; letter-spacing: .03em; }.brand small { display: block; margin-top: 2px; color: #829086; font-size: 11px; letter-spacing: .08em; }
+.header-right { display: flex; align-items: center; gap: 9px; }.offline-pill { display: inline-flex; align-items: center; gap: 7px; color: #517a64; font-size: 12px; font-weight: 600; }.online-dot { width: 7px; height: 7px; border-radius: 50%; background: #509669; }
+.subtle { border: 1px solid #d4d9d2; color: #466655; background: #fff; padding: 9px 14px; border-radius: 8px; font-size: 12px; font-weight: 650; }.subtle:hover { background: #eaf1ea; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 44px; padding-top: 37px; }.primary { min-width: 0; }.sidebar { border-left: 1px solid #dddcd3; padding-left: 35px; }
+.headline { display: flex; justify-content: space-between; align-items: end; margin-bottom: 25px; }.eyebrow { font-size: 10px; letter-spacing: .22em; font-weight: 800; color: #688c73; }.headline h1 { font-size: 32px; letter-spacing: -.06em; margin: 9px 0 8px; font-weight: 800; }.muted { color: #8b968c; font-size: 12px; margin: 0; line-height: 1.65; }.score-strip { display: flex; align-items: center; gap: 13px; background: #fff; border: 1px solid #e1e4da; border-radius: 9px; padding: 12px 16px; white-space: nowrap; font-size: 12px; color: #718477; }.score-strip b { color: #295947; font-size: 19px; margin-left: 6px; }.score-strip em { font-size: 10px; font-style: normal; color: #b5bbb2; }
+.notice { padding: 10px 15px; margin-bottom: 12px; border-radius: 7px; font-size: 12px; }.warning { color: #815722; background: #fff5df; }.error { color: #973d36; background: #fff0ed; }
+.table { height: 395px; position: relative; border-radius: 19px; background: #e7eee5; border: 1px solid #d7e4d6; overflow: hidden; }.table::after { content: ''; position: absolute; inset: 52px 105px; border: 1px solid rgba(111,151,118,.20); border-radius: 49%; pointer-events: none; }
+.north, .south, .west, .east { position: absolute; z-index: 2; }.north { top: 22px; left: 50%; transform: translateX(-50%); }.south { bottom: 20px; left: 50%; transform: translateX(-50%); }.west { left: 20px; top: 49%; transform: translateY(-50%); }.east { right: 20px; top: 49%; transform: translateY(-50%); }
+.player { display: flex; align-items: center; gap: 9px; min-width: 132px; padding: 7px 12px 7px 7px; background: rgba(255,255,255,.84); border: 1px solid #dee7db; border-radius: 10px; box-shadow: 0 4px 15px rgba(48,77,55,.04); }.player.turn { border-color: #649273; background: #fff; box-shadow: 0 0 0 3px rgba(72,129,84,.12); }.player-avatar { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 7px; background: #e0e9df; font-weight: 750; color: #486c50; font-size: 13px; }.player strong { display: block; font-size: 12px; }.player small { color: #859186; font-size: 10px; }.turn-mark { margin-left: auto; width: 6px; height: 6px; border-radius: 50%; background: #46875d; }
+.center { position: absolute; z-index: 1; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; min-width: 195px; max-width: 65%; }.center-overline { font-size: 10px; letter-spacing: .1em; color: #738f79; font-weight: 700; }.center strong { display: block; margin-top: 9px; font-size: 17px; color: #285540; }.center p { font-size: 11px; color: #91a596; }.played-cards { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 2px; margin-top: 12px; }
+.hand-panel { margin-top: 20px; padding: 22px 24px; background: #fff; border: 1px solid #e4e5dc; border-radius: 15px; box-shadow: 0 12px 35px rgba(40,55,43,.04); }.panel-heading { display: flex; justify-content: space-between; align-items: center; }.panel-heading h2, .side-section h2 { margin: 6px 0; font-size: 18px; letter-spacing: -.03em; }.panel-heading h2 small { font-size: 11px; font-weight: 500; color: #829185; margin-left: 4px; }
+.card { position: relative; border: 1px solid #dce3da; border-top: 3px solid var(--suit, #53705c); border-radius: 6px; background: var(--paper, #fff); color: var(--ink, #24382b); box-shadow: 0 2px 7px rgba(27,44,32,.12); text-align: center; padding: 3px; transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease; }
+.card:disabled { opacity: 1; cursor: default; }
+.card.suit-S { --suit:#223b63; --ink:#1c3152; --paper:#eef3fc; }
+.card.suit-H { --suit:#bd304a; --ink:#a91e3b; --paper:#fff0f3; }
+.card.suit-C { --suit:#1d7653; --ink:#166044; --paper:#eaf8ef; }
+.card.suit-D { --suit:#be681c; --ink:#98510e; --paper:#fff3e4; }
+.card.suit-J { --suit:#68428d; --ink:#60387d; --paper:#f5effb; }
+.card.wild { --paper:#fff5cf; border-color:#c89c43; border-top-color:var(--suit); }
+.card-corner { display:flex; align-items:center; justify-content:center; gap:2px; font-family:Arial,"Microsoft YaHei UI",sans-serif; white-space:nowrap; }
+.card-rank { font-size:17px; line-height:1.25; font-weight:800; font-variant-numeric:tabular-nums; }
+.card-suit { font-family:Arial,sans-serif; font-size:20px; line-height:1.2; }
+.card-watermark { display:block; font-family:Arial,sans-serif; font-size:23px; line-height:1; opacity:.38; text-align:center; margin-top:4px; }
+.wild-dot { position:absolute; right:2px; top:17px; font-size:9px; font-weight:800; color:#76501c; }
+.card.selected { border-color:#34804f; border-top-color:var(--suit); background:#e8f5e9; box-shadow:inset 3px 0 #2e8b57,0 4px 10px rgba(22,91,49,.23); }
+.card.selected::after { content:''; position:absolute; right:3px; top:4px; width:6px; height:6px; border-radius:50%; background:#197744; }
+.card:not(:disabled):hover { transform:translateY(-3px); }
+.played-cards .card { flex:0 0 34px; width:34px; height:49px; padding:2px 1px; margin:0; }
+.played-cards .card-rank { font-size:11px; }.played-cards .card-suit { font-size:12px; }.played-cards .card-watermark,.played-cards .wild-dot { display:none; }
+.selection-info { margin-top: 13px; min-height: 20px; font-size: 11px; color: #7d8c7f; }.actions { display: flex; gap: 9px; flex-wrap: wrap; padding-top: 13px; border-top: 1px solid #eef0e9; }.actions button { border-radius: 7px; min-height: 37px; padding: 0 16px; font-size: 12px; font-weight: 700; }.button-primary { border: 1px solid #285d48; color: #fff; background: #285d48; }.button-primary:not(:disabled):hover { background: #1c4534; }.button-secondary { border: 1px solid #dce3da; color: #48614d; background: #fff; }.button-secondary:not(:disabled):hover { background: #f2f8f1; }
+.result { display: flex; align-items: baseline; gap: 15px; margin-top: 15px; padding: 15px 18px; background: #e7f1e7; border-radius: 9px; }.result strong { font-size: 13px; }
+.side-section { padding: 15px 0 26px; border-bottom: 1px solid #dddcd3; }.side-section:first-child { padding-top: 3px; }.side-section h2 { margin: 9px 0 10px; }.side-section p { line-height: 1.8; }.timeline { margin-top: 19px; display: flex; align-items: center; justify-content: space-between; gap: 5px; }.timeline button { border: 1px solid #d9e0d7; background: #fff; border-radius: 6px; min-width: 31px; height: 30px; color: #45634d; }.timeline span { font-size: 11px; color: #65786a; white-space: nowrap; }#scrub { display: block; width: 100%; margin: 18px 0 6px; accent-color: #376a50; }.step-label { font-size: 11px; color: #89948a; }.return-live { margin-top: 11px; background: #e9f1e8; border: none; border-radius: 6px; padding: 8px 12px; color: #315b42; font-weight: 650; font-size: 11px; }.events ol { list-style: none; padding: 0; margin: 0; max-height: 340px; overflow: auto; }.events li { display: flex; gap: 8px; align-items: start; padding: 10px 0; border-bottom: 1px solid #e8e9e2; font-size: 11px; line-height: 1.5; }.history-seat { min-width: 32px; color: #536d58; font-weight: 700; }.events li span:last-child { color: #697569; word-break: break-all; }.research p { font-size: 11px; color: #718173; }.research small { display: block; color: #a0a99d; margin-top: 12px; line-height: 1.6; }footer { color: #9da79e; font-size: 10px; padding: 26px 0 30px; }
+.estimates { list-style: none; padding: 0; margin: 15px 0; }.estimate-row { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid #e2e6db; }.estimate-row strong { font-size: 11px; font-weight: 700; line-height: 1.5; }.estimate-row small { display: block; color: #839184; font-size: 10px; line-height: 1.5; }.estimate-row > span { font-size: 16px; font-weight: 750; color: #315f49; text-align: right; white-space: nowrap; }.analysis-empty { margin-top: 12px !important; }.analysis-verdict { margin:14px 0 0; padding:9px 11px; border-left:3px solid #4f9065; background:#eef6ee; color:#315f46 !important; font-size:11px; line-height:1.7; }.estimate-row.leading { background:#f6faf5; padding-inline:6px; }
+/* Expose every rank and suit in a vertical stack; keep wide hands scrollable, not tiny. */
+.hand-tools { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:9px; margin-top:17px; }
+.order-controls, .hand-tool-end { display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+.tool-chip { border:1px solid #cddbd0; background:#f7faf6; color:#315b43; min-height:35px; padding:6px 10px; font-size:11px; border-radius:7px; font-weight:700; }
+.tool-chip.on { background:#285d48; color:white; border-color:#285d48; }
+.declaration-options { display:flex; gap:7px; align-items:center; flex-wrap:wrap; margin:7px 0 12px; padding:10px; border-radius:8px; background:#fff5e6; color:#694713; font-size:11px; }
+.declaration-options .tool-chip { min-height:33px; }
+.declaration-options strong { width:100%; }
+.tool-chip:focus-visible, .quick-option:focus-visible, .flush-option:focus-visible, .card:focus-visible { outline:3px solid #d39237; outline-offset:2px; }
+.hand-scroll-hint { font-size:11px; line-height:1.5; color:#657e6e; margin-top:14px; }
+.manual-actions { display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-top:9px; padding:8px 10px; border-radius:8px; background:#eaf5ec; color:#295b42; font-size:11px; }
+.manual-actions span { margin-right:auto; }
+.manual-actions .tool-chip { background:#fff; }
+.manual-hand .stack-heading { display:flex; align-items:center; justify-content:space-around; gap:1px; font-size:10px; }
+.manual-hand .stack-heading button { border:1px solid #cedbd0; border-radius:4px; background:white; color:#295b42; font-weight:800; min-width:18px; height:22px; padding:0; }
+.manual-hand .stack-heading button:focus-visible { outline:3px solid #d39237; }
+.manual-hand .stack-heading button:disabled { opacity:.35; }
+.manual-hand .card.selected { box-shadow:0 0 0 3px #e39b2d, 0 3px 10px rgba(22,91,49,.2); }
+.combo-sort { border-color:#347353; color:#255a41; background:#eaf5e8; }
+.combo-hand { gap:12px; }
+.combo-hand .hand-column { flex:0 0 auto; padding:5px 7px 8px; background:#f4f8f1; border:1px solid #dae7d7; border-radius:10px; }
+.combo-hand .stack-heading { display:flex; align-items:center; justify-content:center; gap:3px; min-height:26px; height:auto; font-size:11px; color:#275d41; }
+.combo-select { border:0; background:transparent; color:inherit; font-size:11px; font-weight:800; cursor:pointer; padding:2px 5px; border-radius:5px; }
+.combo-select:not(:disabled):hover { background:#dcecdc; }
+.combo-select:focus-visible { outline:3px solid #d39237; }
+.combo-hand .hand-stack { flex-direction:row; align-items:flex-start; padding:4px 1px 5px; }
+.combo-hand .hand-stack .card { width:39px; height:60px; padding:2px; }
+.combo-hand .hand-stack .card + .card { margin-top:0; margin-left:-2px; }
+.combo-hand .card-rank { font-size:15px; }
+.combo-hand .card-suit { font-size:18px; }
+.combo-hand .card-watermark { font-size:17px; margin-top:2px; }
+.combo-hand .hand-stack .card.selected, .combo-hand .hand-stack .card:not(:disabled):hover { transform:translateY(-4px); }
+.hand { display:flex; align-items:flex-start; gap:8px; min-height:112px; margin-top:4px; padding:9px 3px 17px; overflow-x:auto; overflow-y:hidden; scrollbar-color:#8eb49a transparent; scrollbar-width:thin; }
+.hand-column { flex:0 0 61px; min-width:0; }
+.stack-heading { display:block; height:23px; color:#526b58; font-size:12px; font-weight:800; text-align:center; white-space:nowrap; }
+.stack-heading small { font-size:10px; font-weight:600; color:#829684; }
+.hand-stack { display:flex; flex-direction:column; align-items:stretch; }
+.hand-stack .card { display:block; width:61px; height:75px; flex:none; margin:0; padding:3px 1px; }
+.hand-stack .card + .card { margin-top:-46px; }
+.hand-stack .card:not(:disabled):hover { transform:translateX(4px); z-index:auto; }
+.hand-stack .card.selected { transform:translateX(4px); z-index:auto; }
+.hand-empty { padding:12px 0; color:#708273; font-size:12px; }
+.extracted-hand { margin-top:12px; padding:9px 11px 10px; background:#edf6ed; border:1px solid #c9dfcc; border-radius:9px; }
+.extracted-hand .stack-heading { height:auto; margin-bottom:7px; text-align:left; color:#315d44; }
+.extracted-cards { display:flex; gap:5px; padding:3px 2px 8px; overflow-x:auto; scrollbar-width:thin; }
+.extracted-cards .card { flex:0 0 55px; height:75px; }
+.extracted-cards .card.pulled { box-shadow:inset 0 0 0 1px #358459,0 2px 7px rgba(0,0,0,.1); }
+.extracted-cards .card.selected { transform:translateY(-2px); }
+.flush-options, .quick-options { display:grid; grid-template-columns:repeat(auto-fit,minmax(185px,1fr)); gap:7px; border:1px solid #dce6d9; background:#f6f9f4; border-radius:9px; padding:10px; margin-top:10px; }
+.flush-caption { grid-column:1 / -1; font-size:11px; line-height:1.6; color:#637566; }
+.flush-option, .quick-option { min-height:42px; padding:7px 9px; display:flex; align-items:center; gap:7px; text-align:left; border:1px solid #d9e2d6; background:white; border-radius:7px; font-size:12px; color:#294333; }
+.flush-option:hover, .quick-option:hover { border-color:#5a8966; background:#eef6ee; }
+.flush-option small { font-size:10px; color:#6d7d70; margin-left:auto; }
+.flush-suit { font-family:Arial,sans-serif; font-size:22px; }.suit-text-H { color:#a91e3b; }.suit-text-D { color:#98510e; }.suit-text-S { color:#1c3152; }.suit-text-C { color:#166044; }
+.quick-option { flex-direction:column; align-items:flex-start; gap:2px; }.quick-option span { overflow:hidden; white-space:nowrap; max-width:100%; text-overflow:ellipsis; font-size:11px; }
+.pull-status { margin:9px 0 0; color:#35684c; font-size:11px; }
+@media(max-width:650px) { .hand { gap:6px; }.hand-column { flex-basis:57px; }.hand-stack .card { width:57px; height:72px; }.hand-stack .card + .card { margin-top:-43px; }.card-rank { font-size:16px; }.card-suit { font-size:19px; }.card-watermark { font-size:19px; }.hand-tools { align-items:flex-start; }.order-controls { width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }.hand-tool-end { width:100%; }.tool-chip { flex:1; }.order-controls .tool-chip { width:100%; font-size:11px; min-height:40px; }.flush-options,.quick-options { grid-template-columns:1fr; } }
+@media(max-width:1100px) { .layout { grid-template-columns: minmax(0,1fr); gap: 15px; }.sidebar { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; border-left: 0; padding: 0; }.side-section { border-top: 1px solid #dddcd3; }.research { grid-column: 1 / -1; } }
+@media(max-width:650px) { .shell { padding: 0 15px; }.topbar { min-height: 69px; height: auto; gap: 8px; padding: 10px 0; }.header-right { gap: 4px; flex-wrap: wrap; justify-content: flex-end; }.offline-pill { display: none; }.brand small { font-size: 9px; }.subtle { font-size: 10px; padding: 6px 7px; }.layout { padding-top: 24px; }.headline { align-items: start; gap: 8px; }.headline h1 { font-size: 27px; }.score-strip { flex-direction: column; align-items: start; gap: 0; padding: 6px 9px; font-size: 10px; }.score-strip b { font-size: 14px; }.score-strip em { display: none; }.table { height: 362px; }.table::after { inset: 56px 44px; }.player { min-width: 0; gap: 5px; padding: 5px; }.player-avatar { width: 23px; height: 23px; font-size: 10px; }.player strong { font-size: 10px; }.player small { font-size: 8px; }.west { left: 7px; top: 34%; }.east { right: 7px; top: 34%; }.north { top: 16px; }.south { bottom: 14px; }.center { top: 59%; }.center strong { font-size: 14px; }.hand-panel { padding: 17px 13px; }.sidebar { grid-template-columns: 1fr; gap: 0; }.research { grid-column: auto; }.played-cards .card { flex-basis:30px; width:30px; }.played-cards .card-rank { font-size:10px; }.played-cards .card-suit { font-size:11px; } }
+/* Original Arena status layer: shows turn ownership and the pass/hand-off gate explicitly. */
+.arena-hud { display:flex; align-items:center; gap:13px; min-height:56px; margin:0 0 8px; padding:9px 13px; border:1px solid #c8d9ca; border-radius:11px; background:#edf5eb; color:#284b38; }
+.hud-icon { display:grid; place-items:center; flex:0 0 33px; height:33px; border-radius:8px; background:#2a6048; color:white; font-weight:800; }
+.arena-hud strong, .arena-hud small { display:block; }.arena-hud strong { font-size:12px; }.arena-hud small { margin-top:2px; color:#5a7765; font-size:11px; line-height:1.5; }
+.hud-progress { display:flex; gap:3px; margin-left:auto; flex-shrink:0; }.hud-progress i { display:block; width:11px; height:7px; border-radius:3px; background:#cbd8cb; }.hud-progress i.done { background:#398457; }
+.ai-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin:9px 0 14px; }.ai-toolbar > span { font-size:11px; font-weight:750; color:#47604e; margin-right:4px; }.ai-toolbar > small { color:#65806a; font-size:10px; margin-left:auto; }
+.card-back { display:inline-block; flex:0 0 15px; height:23px; margin-left:auto; border:2px solid white; border-radius:3px; background:repeating-linear-gradient(45deg,#326750 0 3px,#5c9775 3px 5px); box-shadow:0 1px 3px #395b4940; }
+.player.ally .player-avatar { background:#d9ede0; }.player.rival .player-avatar { background:#f1e8df; color:#7b5740; }
+@media(max-width:650px) { .arena-hud { align-items:flex-start; gap:9px; }.hud-progress { margin-top:12px; }.ai-toolbar > small { width:100%; margin-left:0; } }
+/* Dense arena: keep the action, playable hand and trick visible together on laptops. */
+.shell { max-width:1480px; padding-inline:clamp(12px,2vw,28px); }
+.topbar { height:58px; }.brand-icon { width:32px; height:32px; font-size:17px; }
+.layout { grid-template-columns:minmax(0,1fr) 276px; gap:18px; padding-top:14px; }
+.sidebar { padding-left:18px; }.headline { margin-bottom:10px; align-items:center; }
+.headline h1 { font-size:24px; margin:3px 0; }.eyebrow { font-size:9px; }
+.score-strip { padding:7px 12px; }.score-strip b { font-size:16px; }
+.table { height:276px; border-radius:13px; }.table::after { inset:35px 100px; }
+.north { top:10px; }.south { bottom:10px; }.west { left:12px; }.east { right:12px; }
+.player { padding:4px 8px 4px 4px; }.player-avatar { width:26px; height:26px; }
+.center strong { margin-top:4px; font-size:15px; }.center p { margin:4px 0; }
+.played-cards { margin-top:6px; }.played-cards .card { height:39px; width:29px; flex-basis:29px; }
+.arena-hud { min-height:42px; padding:5px 10px; }.hud-icon { flex-basis:27px; height:27px; }
+.ai-toolbar { margin:5px 0 8px; }.ai-toolbar .tool-chip { min-height:27px; padding:3px 7px; }
+.hand-panel { margin-top:10px; padding:10px 14px; border-radius:10px; }
+.panel-heading h2 { font-size:15px; margin:2px 0; }.hand-tools { margin-top:7px; }
+.tool-chip { min-height:29px; padding:4px 8px; }.hand-scroll-hint { margin-top:8px; }
+.hand { min-height:95px; padding:5px 3px 11px; gap:6px; }
+.hand-column { flex-basis:54px; }.hand-stack .card { width:54px; height:67px; }
+.hand-stack .card + .card { margin-top:-42px; }.stack-heading { height:20px; }
+.combo-hand { gap:7px; }.combo-hand .hand-column { padding:3px 4px 5px; }
+.combo-hand .hand-stack .card { width:36px; height:53px; }
+.combo-hand .stack-heading { min-height:20px; }.combo-select { font-size:10px; }
+.selection-info { margin-top:6px; }.actions { padding-top:7px; }.actions button { min-height:32px; }
+.side-section { padding:9px 0 15px; }.side-section h2 { font-size:15px; margin:4px 0 7px; }
+.events ol { max-height:215px; }.events li { padding:5px 0; }.timeline { margin-top:10px; }
+.editing-hand .stack-heading { display:flex; align-items:center; justify-content:space-around; gap:2px; }
+.editing-hand .stack-heading button { border:1px solid #cedbd0; border-radius:4px; background:#fff; color:#295b42; min-width:18px; height:22px; padding:0; }
+.editing-hand .card.selected { box-shadow:0 0 0 3px #e39b2d,0 3px 10px rgba(22,91,49,.2); }
+@media(max-width:1100px) { .layout { grid-template-columns:minmax(0,1fr); }.sidebar { border:0; padding:0; } }
+@media(max-width:650px) { .topbar { min-height:56px; height:auto; }.layout { padding-top:9px; }.headline h1 { font-size:21px; }.table { height:245px; }.table::after { inset:35px 35px; }.west,.east { top:37%; }.center { top:56%; }.hand-panel { padding:9px; }.order-controls { grid-template-columns:repeat(2,minmax(0,1fr)); }.hand-column { flex-basis:51px; }.hand-stack .card { width:51px; height:65px; }.hand-stack .card + .card { margin-top:-40px; }.combo-hand .hand-stack .card { width:34px; height:51px; }.combo-hand .hand-column { flex-basis:auto; } }
+@media(prefers-reduced-motion:reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+/* Touch-first layout: keep every exposed card selectable and controls above the safe area. */
+@media (max-width:760px) {
+  html { scroll-behavior:smooth; }
+  body { min-width:280px; overflow-x:hidden; -webkit-text-size-adjust:100%; }
+  .shell { min-width:0; max-width:100%; padding-inline:max(10px,env(safe-area-inset-left)) max(10px,env(safe-area-inset-right)); padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); }
+  .topbar { display:grid; grid-template-columns:1fr; height:auto; gap:8px; padding:8px 0 10px; }
+  .brand { min-width:0; }.brand b { font-size:16px; }.brand small { letter-spacing:0; font-size:10px; }
+  .header-right { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); width:100%; gap:5px; }
+  .header-right .offline-pill { display:none; }
+  .subtle { display:grid; place-items:center; min-width:0; min-height:44px; padding:5px 2px; text-align:center; white-space:nowrap; font-size:11px; }
+  .mobile-replay-link { text-decoration:none; }
+  .layout { display:grid; grid-template-columns:minmax(0,1fr); gap:18px; padding-top:6px; }
+  .headline { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:6px; margin-bottom:9px; }
+  .headline h1 { font-size:21px; }.headline .muted { font-size:11px; line-height:1.35; }
+  .score-strip { padding:5px 8px; min-width:62px; font-size:10px; }.score-strip b { font-size:15px; }
+  .arena-hud { min-height:48px; margin-bottom:5px; }.arena-hud small { font-size:10px; }.hud-progress { display:none; }
+  .ai-toolbar { margin:4px 0 7px; }.ai-toolbar > small { width:auto; margin-left:auto; }
+  .mobile-hand-link { display:grid; place-items:center; padding:6px 9px; min-height:44px; color:#245d3e; background:#e7f2e6; border:1px solid #b5d3bd; border-radius:8px; font-size:12px; font-weight:800; text-decoration:none; }
+  #hand-panel { scroll-margin-top:8px; }
+  .table { height:270px; border-radius:12px; }.table::after { inset:34px 28px; }
+  .north { top:8px; }.south { bottom:7px; }.west,.east { top:82px; transform:none; }.west { left:7px; }.east { right:7px; }
+  .player { width:auto; max-width:116px; min-height:39px; gap:5px; padding:4px 6px 4px 4px; }.player-avatar { flex:0 0 25px; width:25px; height:25px; font-size:12px; }.player strong { font-size:11px; white-space:nowrap; }.player small { font-size:9px; white-space:nowrap; }.card-back { display:none; }
+  .center { top:60%; min-width:0; width:min(94%,270px); max-width:none; }.center strong { font-size:14px; margin-top:3px; }.center p { font-size:10px; line-height:1.3; }.played-cards { max-height:78px; overflow:auto; gap:1px; margin-top:4px; }
+  .played-cards .card { flex:0 0 29px; width:29px; height:37px; }
+  .hand-panel { display:flex; flex-direction:column; margin-top:10px; padding:10px 8px 0; overflow:visible; }
+  .panel-heading { order:0; }.extracted-hand,.hand-scroll-hint { order:1; }
+  .hand { order:2; }.hand-tools,.quick-options,.flush-options,.manual-actions,.pull-status { order:3; }
+  .selection-info { order:4; }.declaration-options { order:5; }.actions { order:6; }
+  .hand-tools { gap:8px; }
+  .order-controls { width:100%; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }.order-controls .tool-chip { min-height:46px; font-size:11px; }
+  .hand-tool-end { width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }.tool-chip { min-height:44px; padding:7px 8px; touch-action:manipulation; }
+  .manual-hand .stack-heading button,.editing-hand .stack-heading button { min-width:34px; min-height:36px; }
+  .combo-select { min-height:38px; }.combo-hand .stack-heading { min-height:40px; }
+  .hand { min-height:105px; max-width:100%; margin-top:3px; padding:5px 3px 12px; overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; touch-action:auto; }
+  .hand-column { flex:0 0 53px; }.hand-stack .card { width:53px; height:69px; touch-action:manipulation; }.hand-stack .card + .card { margin-top:-25px; }
+  .hand-stack .card.selected { transform:translateX(2px); }.hand-stack .card:not(:disabled):hover { transform:none; }
+  .combo-hand .hand-column { flex:0 0 auto; }.combo-hand .hand-stack { gap:2px; }.combo-hand .hand-stack .card { width:46px; height:64px; }.combo-hand .hand-stack .card + .card { margin-left:0; }
+  .extracted-cards { -webkit-overflow-scrolling:touch; }.extracted-cards .card { flex-basis:52px; }
+  .selection-info { min-height:36px; margin:5px 0; font-size:12px; line-height:1.45; }
+  .actions { position:sticky; z-index:12; bottom:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; padding:8px 0 max(8px,env(safe-area-inset-bottom)); margin:0 -2px; background:rgba(255,255,255,.96); border-top:1px solid #dce8dc; box-shadow:0 -7px 20px rgba(36,60,40,.08); }
+  .actions button { min-height:48px; font-size:14px; padding:5px 9px; touch-action:manipulation; }.actions .button-primary { font-size:16px; }
+  .sidebar { display:block; scroll-margin-top:12px; padding-bottom:22px; }.side-section { padding:16px 0; }.side-section p,.research p { font-size:12px; }
+  .timeline { gap:4px; }.timeline button { min-width:44px; height:44px; font-size:17px; }.timeline span { font-size:12px; }
+  #scrub { height:32px; }.return-live { min-height:44px; font-size:12px; }.events ol { max-height:230px; }
+  .quick-options,.flush-options { grid-template-columns:minmax(0,1fr); }.quick-option,.flush-option { min-height:50px; }
+  button:active:not(:disabled),.subtle:active { filter:brightness(.94); }
+}
+@media (max-width:350px) {
+  .headline { grid-template-columns:minmax(0,1fr) 68px; }.headline h1 { font-size:19px; }
+  .header-right .subtle { font-size:10px; }.table { height:270px; }.center { top:60%; }
+  .order-controls .tool-chip { padding-inline:3px; font-size:10px; }
+}
+@media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+
+</style>
+  <link rel="manifest" href="./mobile.webmanifest" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+</head>
+<body>
+  <div id="app"></div>
+<details style="padding:1rem;margin:auto;max-width:960px;color:#5d6d61"><summary>开源组件许可证（Apache-2.0）</summary><pre style="white-space:pre-wrap;font-size:10px">
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "[]"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright [yyyy] [name of copyright owner]
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+</pre></details>
+<script>(function () {
+const modules = {
+"offline/main": function(require, module, exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const analysis_1 = require("./analysis");
+const cards_1 = require("../lib/game/cards");
+const hand_tools_1 = require("./hand-tools");
+const ai_1 = require("../lib/game/ai");
+const ai_gateway_1 = require("./ai-gateway");
+const arena_status_1 = require("./arena-status");
+const engine_1 = require("../lib/game/engine");
+const rules_1 = require("../lib/game/rules");
+
+const KEY = 'guandan-offline-single-deal-v2';
+const HAND_ORDER_KEY = 'guandan-offline-hand-order-v1';
+const AI_MODE_KEY = 'guandan-arena-ai-mode-v1';
+const MANUAL_KEY = 'guandan-offline-manual-v1-';
+const MAX_ACTIONS = 350;
+const ANALYSIS_SAMPLES = 20;
+const app = document.querySelector('#app');
+const mobileApp = document.documentElement?.dataset.platform === 'android';
+let session;
+let frames = [];
+let replay = -1;
+let selected = new Set();
+let selectedDeclaration = null;
+let handOrder = 'rank';
+let manualEditing = false;
+let arrangingCard = null;
+let pulledKey = null;
+let flushMenuOpen = false;
+let quickMovesOpen = false;
+let error = '';
+let warning = '';
+let aiTimer;
+let aiRevision = 0;
+let hintRevision = 0;
+let aiMode = 'local';
+let aiStatus = '本地结构策略就绪';
+let pendingNew = false;
+let pendingAnalysis = false;
+let analyzedSamples = 0;
+let analysisResult = null;
+let analysisIndex = -1;
+let analysisTimer;
+const analysisCache = new Map();
+const handLayoutCache = new Map();
+const names = ['你', '王总', '小顾', '林姐'];
+const comboNames = { single: '单张', pair: '对子', triple: '三张', triplePair: '三带二', straight: '顺子', tube: '三连对', plate: '二连三', bomb: '炸弹', straightFlush: '同花顺', jokerBomb: '四王炸' };
+function initialSession() {
+    const random = crypto.getRandomValues(new Uint32Array(2));
+    const level = (2 + random[1] % 13);
+    return { version: 2, deals: [{ initial: (0, engine_1.newGame)(random[0], level), actions: [] }] };
+}
+function singleDealSummary(state) {
+    if (state.phase !== 'finished' || state.finishOrder.length < 4)
+        return '';
+    const winner = state.finishOrder[0] % 2;
+    const pattern = state.finishOrder[1] % 2 === winner ? '双上' : state.finishOrder[2] % 2 === winner ? '头游三游' : '头游末游';
+    return `${winner === 0 ? '你 / 小顾队' : '王总 / 林姐队'} · ${pattern} · ${winner === 0 ? '你方获胜' : '对方获胜'}（本局结束，不升级、不贡还）`;
+}
+function rebuild(value) {
+    if (value.version !== 2 || !Array.isArray(value.deals) || value.deals.length !== 1)
+        throw new Error('仅支持新版单局存档；旧版多副比赛仍保留在旧文件中');
+    const all = [];
+    for (let i = 0; i < value.deals.length; i++) {
+        const deal = value.deals[i];
+        if (!deal || !Array.isArray(deal.actions) || deal.actions.length > MAX_ACTIONS || !Number.isInteger(deal.initial?.seed) || !Number.isInteger(deal.initial?.level) || deal.initial.level < 2 || deal.initial.level > 14)
+            throw new Error('存档记录不完整');
+        let state = (0, engine_1.newGame)(deal.initial.seed, deal.initial.level);
+        if (state.roundNo !== deal.initial.roundNo || state.level !== deal.initial.level || state.turn !== deal.initial.turn || state.players.map(p => p.hand.map(c => c.id).join(',')).join('|') !== deal.initial.players.map(p => p.hand.map(c => c.id).join(',')).join('|'))
+            throw new Error('发牌记录校验失败');
+        all.push({ state, round: state.roundNo, label: '单局 · 发牌' });
+        for (const action of deal.actions) {
+            if (![0, 1, 2, 3].includes(action.seat))
+                throw new Error('座位记录无效');
+            state = action.kind === 'pass' ? (0, engine_1.passTurn)(state, action.seat) : action.kind === 'play' && Array.isArray(action.cards) ? (0, engine_1.playCards)(state, action.seat, action.cards, action.declared) : (() => { throw new Error('动作记录无效'); })();
+            all.push({ state, round: state.roundNo, label: `${names[action.seat]}${action.kind === 'pass' ? '过牌' : `出了 ${action.cards.length} 张`}` });
+        }
+    }
+    return all;
+}
+function load() {
+    try {
+        const saved = localStorage.getItem(KEY);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            frames = rebuild(parsed);
+            return parsed;
+        }
+    }
+    catch (cause) {
+        warning = `本地存档无法读取，已新开一局。${cause instanceof Error ? cause.message : ''}`;
+    }
+    const fresh = initialSession();
+    frames = rebuild(fresh);
+    return fresh;
+}
+function persist() {
+    try {
+        localStorage.setItem(KEY, JSON.stringify(session));
+    }
+    catch {
+        warning = '浏览器存储空间不足，本次对局可能无法保存；请勿关闭页面。';
+    }
+}
+function current() { return frames.at(-1).state; }
+function shown() { return frames[replay < 0 ? frames.length - 1 : replay].state; }
+function escapeHtml(input) { return input.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+function cardView(card, clickable = false, pulled = false) {
+    const active = manualEditing ? arrangingCard === card.id && replay < 0 : selected.has(card.id) && replay < 0;
+    const wild = card.suit === 'H' && card.rank === shown().level;
+    const suit = card.suit === 'J' ? (card.rank === 16 ? '★' : '✦') : cards_1.SUIT_LABEL[card.suit];
+    const name = card.suit === 'J' ? cards_1.RANK_LABEL[card.rank] : `${{ S: '黑桃', H: '红桃', C: '梅花', D: '方块' }[card.suit]}${cards_1.RANK_LABEL[card.rank]}`;
+    return `<button class="card suit-${card.suit} ${active ? 'selected' : ''} ${wild ? 'wild' : ''} ${pulled ? 'pulled' : ''}" ${clickable ? `data-card="${escapeHtml(card.id)}" aria-pressed="${active}"` : 'disabled'} aria-label="${name}，第${card.deck + 1}副${wild ? '，逢人配' : ''}" title="${name}${wild ? ' · 逢人配' : ''}"><span class="card-corner"><span class="card-rank">${escapeHtml(card.suit === 'J' ? (card.rank === 16 ? '大' : '小') : cards_1.RANK_LABEL[card.rank])}</span><span class="card-suit">${suit}</span></span><span class="card-watermark" aria-hidden="true">${suit}</span>${wild ? '<span class="wild-dot">配</span>' : ''}</button>`;
+}
+function selectedOptions(state) {
+    return (0, rules_1.comboOptions)(state.players[0].hand.filter(c => selected.has(c.id)), state.level);
+}
+function selectedInfo(state) {
+    if (!selected.size)
+        return { text: '点选手牌，再出牌；可用“提示”查看基础策略。', valid: false };
+    const options = selectedOptions(state);
+    if (!options.length)
+        return { text: '当前组合不是合法牌型', valid: false };
+    if (options.length > 1 && !selectedDeclaration)
+        return { text: '这组牌含逢人配，有多种合法解释：请先在下方声明牌型与点数。', valid: false };
+    const combo = options.length === 1 ? options[0] : (0, rules_1.parseCombo)(state.players[0].hand.filter(c => selected.has(c.id)), state.level, selectedDeclaration);
+    if (!combo)
+        return { text: '声明的牌型与所选牌不符，请重新选择。', valid: false };
+    const legal = (0, rules_1.beats)(combo, state.lastPlay?.combo ?? null);
+    return { text: `${(0, rules_1.comboName)(combo)} · ${combo.mainRank} 点${combo.secondaryRank === undefined ? '' : ` · 带 ${combo.secondaryRank} 点对子`} · ${selected.size} 张${legal ? '' : ' · 压不过上一手'}`, valid: legal };
+}
+function playerBadge(state, seat) {
+    const p = state.players[seat];
+    return `<div class="player ${state.turn === seat && state.phase === 'playing' ? 'turn' : ''} ${seat % 2 === 0 ? 'ally' : 'rival'}"><span class="player-avatar">${['我', '王', '顾', '林'][seat]}</span><div><strong>${names[seat]}</strong><small>${seat % 2 === 0 ? '我方' : '对方'} · ${p.finished ? `第 ${p.finished} 名` : `${p.hand.length} 张`}</small></div>${seat !== 0 && !p.finished ? '<span class="card-back" aria-hidden="true"></span>' : ''}${state.turn === seat && state.phase === 'playing' ? '<i class="turn-mark"></i>' : ''}</div>`;
+}
+function historyRows(state) {
+    return state.events.filter(e => ['play', 'pass', 'trick', 'round'].includes(e.type)).slice(-13).reverse().map(e => {
+        const cards = e.cardIds?.length && e.type === 'play' ? e.cardIds.map(id => {
+            const card = state.players.flatMap(p => p.hand).find(c => c.id === id);
+            if (card)
+                return (0, cards_1.cardLabel)(card);
+            const match = id.match(/^[01]-([SHCDJ])-(\d+)$/);
+            return match ? `${{ S: '♠', H: '♥', C: '♣', D: '♦', J: '' }[match[1]]}${cards_1.RANK_LABEL[Number(match[2])]}` : '?';
+        }).join(' ') : '';
+        return `<li><span class="history-seat">${e.seat === undefined ? '牌局' : names[e.seat]}</span><span>${escapeHtml(e.type === 'play' ? `${cards}${e.note ? ` · ${e.note}` : ''}` : e.type === 'pass' ? '过牌' : e.note || '新一圈')}</span></li>`;
+    }).join('') || '<li class="muted">本副牌刚开始</li>';
+}
+function analysisPanel(cursor) {
+    const state = frames[cursor].state;
+    if (state.phase !== 'playing' || state.turn !== 0)
+        return '<p class="muted">请在时间轴选择轮到你的决策前局面，查看候选出法比较。</p>';
+    const result = analysisIndex === cursor ? analysisResult : analysisCache.get(cursor);
+    const leading = result?.estimates.find(item => item.candidate.key === result.leadingKey);
+    const verdict = result ? `<p class="analysis-verdict">${leading ? `${result.separated ? '本次采样有相对明显的领先候选' : '本次采样得分暂时领先'}：${escapeHtml(leading.candidate.label)}。${result.separated ? '配对抽样差值区间均高于其余候选；仍非确定最优。' : '与其他候选的差异尚不稳健，暂不建议据此断言优劣。'}` : '当前候选在保守抽样得分上并列或没有有效结果，暂不推荐唯一出法。'}</p>` : '';
+    const rows = result?.estimates.map((item, index) => `<li class="estimate-row ${item.candidate.key === result.leadingKey ? 'leading' : ''}"><div><strong>${escapeHtml(item.candidate.label)}${item.candidate.original ? ' · 实际选择' : ''}${item.candidate.key === result.leadingKey ? ' · 本次采样得分领先' : ''}</strong><small>${item.completed}/${result.samples} 次有效完成；相对列表首项 ${index === 0 ? '基准' : `${item.pairedGap >= 0 ? '+' : ''}${Math.round(item.pairedGap * 100)} 个百分点（配对区间 ${Math.round(item.pairedLow * 100)}～${Math.round(item.pairedHigh * 100)}）`}</small></div><span>${Math.round(item.probability * 100)}%<small>${Math.round(item.low * 100)}–${Math.round(item.high * 100)}%</small></span></li>`).join('') ?? '';
+    return `<p class="muted">指标：从当时视角估计本副牌本队取得头游的概率；不是整场胜率。列表首项仅作配对比较的基准；领先者按保守抽样得分筛选，不代表最优出法。</p><button class="return-live" data-action="analyze" ${pendingAnalysis ? 'disabled' : ''}>${pendingAnalysis && analysisIndex === cursor ? `正在计算 ${analyzedSamples}/${ANALYSIS_SAMPLES} 组…` : result ? '重新估计' : '比较候选出法'}</button>${verdict}${rows ? `<ol class="estimates">${rows}</ol><small>${result?.samples} 组配对暗牌采样 · 95% 近似抽样波动区间。仅比较列表内的候选；续打用结构策略且仅看各自可见信息，模型及暗牌先验误差不含在区间内。</small>` : '<p class="muted analysis-empty">默认对照最多 5 个候选（优先含实际出法、结构策略、过牌和其他打法）；并未穷举所有实体牌组合。粗估后可重新估计。</p>'}`;
+}
+function quickOptions(state) {
+    if (state.phase !== 'playing' || state.turn !== 0)
+        return [];
+    const byId = new Map(state.players[0].hand.map(card => [card.id, card]));
+    const grouped = new Map();
+    for (const move of (0, ai_1.legalMoves)((0, ai_1.observe)(state, 0))) {
+        const combo = (0, rules_1.parseCombo)(move.map(id => byId.get(id)), state.level);
+        if (combo && !grouped.has(combo.kind))
+            grouped.set(combo.kind, move);
+    }
+    return [...grouped.values()].slice(0, 10);
+}
+function manualStorageKey(state) { return `${MANUAL_KEY}${state.seed}-${state.roundNo}-${state.level}`; }
+function readManual(state, fallback = 'rank') {
+    const key = manualStorageKey(state);
+    let saved = handLayoutCache.get(key) ?? null;
+    if (saved === null) {
+        try {
+            saved = JSON.parse(localStorage.getItem(key) ?? 'null');
+        }
+        catch {
+            saved = null;
+        }
+    }
+    if (saved === null && handOrder === 'combo') {
+        const groups = (0, hand_tools_1.groupHandByCombos)(state.players[0].hand, state.level);
+        saveManual(state, groups);
+        return groups;
+    }
+    return (0, hand_tools_1.manualHandStacks)(state.players[0].hand, state.level, saved, fallback);
+}
+function saveManual(state, stacks) {
+    const key = manualStorageKey(state);
+    handLayoutCache.set(key, stacks.map(group => [...group]));
+    try {
+        localStorage.setItem(key, JSON.stringify(stacks));
+    }
+    catch {
+        warning = '浏览器存储不可用，理牌仅在当前页面内保留。';
+    }
+}
+function handMarkup(state, order, pulled, clickable) {
+    const hand = state.players[0].hand;
+    const level = state.level;
+    const pulledIds = new Set(pulled?.ids ?? []);
+    const visible = hand.filter(card => !pulledIds.has(card.id));
+    const byId = new Map(visible.map(card => [card.id, card]));
+    const stacks = order === 'manual' || order === 'combo'
+        ? readManual(state).map((ids, index) => {
+            const cards = ids.map(id => byId.get(id)).filter(Boolean);
+            return { key: `group-${index}`, label: order === 'combo' ? (0, hand_tools_1.handGroupLabel)(cards, level) : `第${index + 1}列`, cards, sourceIndex: index };
+        }).filter(stack => stack.cards.length)
+        : (0, hand_tools_1.stackHand)(visible, level, order).map((stack, sourceIndex) => ({ ...stack, sourceIndex }));
+    const extracted = pulled ? `<div class="extracted-hand" role="group" aria-label="已拔出的同花顺"><span class="stack-heading">已拔出的同花顺</span><div class="extracted-cards">${hand.filter(card => pulledIds.has(card.id)).map(card => cardView(card, clickable, true)).join('')}</div></div>` : '';
+    const hint = manualEditing ? '手动理牌：点来源牌再点目标牌插到它前面；可单独成组或用箭头移动整组。点“完成理牌”恢复选牌。' : order === 'combo' ? '按合法牌型分组，横向滑动查看更多；点组名整组选牌。重叠组法仅作启发式整理，不保证唯一或最优；也可自己选牌“理成一组”。' : order === 'manual' ? '已保留手动排布 · 点击牌面选牌' : `${order === 'rank' ? '同点数竖向叠放' : '按花色分组，同花色同点数叠放'} · 点击露出的牌面选牌；选好三带二/顺子等，可点“理成一组” · 横向滑动查看全部`;
+    return `${extracted}<div class="hand-scroll-hint">${hint}</div>${manualEditing && replay < 0 ? `<div class="manual-actions"><span>${arrangingCard ? '已选择一张牌：点目标牌插入，或单独成列。' : '先点要移动的牌。'}</span><button class="tool-chip" data-action="manual-new" ${arrangingCard ? '' : 'disabled'}>单独成列</button><button class="tool-chip" data-action="manual-cancel" ${arrangingCard ? '' : 'disabled'}>取消移动</button></div>` : ''}${!manualEditing && replay < 0 && selected.size >= 2 ? `<div class="manual-actions"><span>已选中 ${selected.size} 张：点“理成一组”可按你的组合单独摆放，不会出牌。</span><button class="tool-chip" data-action="group-selection">理成一组</button></div>` : ''}<div class="hand ${order === 'combo' ? 'combo-hand' : order === 'manual' ? 'manual-hand' : ''} ${manualEditing ? 'editing-hand' : ''}" role="group" aria-label="我的手牌">${stacks.map((stack, index) => `<div class="hand-column" role="group" aria-label="${escapeHtml(stack.label)}，${stack.cards.length}张"><span class="stack-heading">${manualEditing && replay < 0 ? `<button type="button" data-manual-column="${stack.sourceIndex}" data-direction="-1" aria-label="第${index + 1}列左移" ${index === 0 ? 'disabled' : ''}>‹</button>` : ''}${order === 'combo' && !manualEditing && replay < 0 ? `<button type="button" class="combo-select" data-combo-group="${stack.sourceIndex}" ${clickable ? '' : 'disabled'} aria-label="选中${escapeHtml(stack.label)}${stack.cards.length}张">${escapeHtml(stack.label)} <small>${stack.cards.length}</small></button>` : `${escapeHtml(stack.label)} <small>${stack.cards.length}</small>`}${manualEditing && replay < 0 ? `<button type="button" data-manual-column="${stack.sourceIndex}" data-direction="1" aria-label="第${index + 1}列右移" ${index === stacks.length - 1 ? 'disabled' : ''}>›</button>` : ''}</span><div class="hand-stack">${stack.cards.map(card => cardView(card, clickable || (manualEditing && replay < 0))).join('')}</div></div>`).join('') || '<span class="hand-empty">手牌已出完</span>'}</div>`;
+}
+function render() {
+    const handScroll = document.querySelector('.hand')?.scrollLeft ?? 0;
+    const extractedScroll = document.querySelector('.extracted-cards')?.scrollLeft ?? 0;
+    const focused = typeof HTMLButtonElement !== 'undefined' && document.activeElement instanceof HTMLButtonElement && app.contains(document.activeElement)
+        ? { card: document.activeElement.dataset.card, action: document.activeElement.dataset.action } : null;
+    const state = shown();
+    const latest = current();
+    const inspecting = replay >= 0;
+    const myTurn = !inspecting && latest.phase === 'playing' && latest.turn === 0;
+    const flushes = (0, hand_tools_1.findStraightFlushes)(state.players[0].hand, state.level, state.lastPlay);
+    const pulled = flushes.find(option => `${option.ids.slice().sort().join('|')}|${option.high}` === pulledKey) ?? null;
+    const myHand = state.players[0].hand;
+    const info = inspecting ? { text: '回放仅展示当时你自己的手牌；不显示其他三家的暗牌。', valid: false } : manualEditing ? { text: '正在手动理牌：完成后点“完成理牌”保留排布并返回选牌。', valid: false } : selectedInfo(latest);
+    const quickMoves = quickMovesOpen && myTurn ? quickOptions(latest) : [];
+    const status = (0, arena_status_1.arenaStatus)(state);
+    const last = state.lastPlay;
+    const lastCards = last ? last.combo.cards.map(c => cardView(c)).join('') : '';
+    const cursor = inspecting ? replay : frames.length - 1;
+    const declaredChoices = myTurn && !manualEditing && selected.size ? selectedOptions(latest) : [];
+    const declarationMarkup = declaredChoices.length > 1 ? `<div class="declaration-options" role="group" aria-label="逢人配牌型声明"><strong>声明本手牌型：</strong>${declaredChoices.map((combo, index) => `<button class="tool-chip ${selectedDeclaration?.kind === combo.kind && selectedDeclaration.mainRank === combo.mainRank && selectedDeclaration.secondaryRank === combo.secondaryRank ? 'on' : ''}" data-declare="${index}" aria-pressed="${selectedDeclaration?.kind === combo.kind && selectedDeclaration.mainRank === combo.mainRank && selectedDeclaration.secondaryRank === combo.secondaryRank}">${escapeHtml((0, rules_1.comboName)(combo))} · ${combo.mainRank} 点${combo.secondaryRank === undefined ? '' : ` 带 ${combo.secondaryRank} 点对子`}${(0, rules_1.beats)(combo, latest.lastPlay?.combo ?? null) ? '' : '（压不过）'}</button>`).join('')}</div>` : '';
+    app.innerHTML = `<div class="shell"><header class="topbar"><div class="brand"><span class="brand-icon">掼</span><div><b>掼蛋训练器</b><small>随机级牌 · 单局 Arena · 测试版 0.15</small></div></div><div class="header-right"><span class="offline-pill"><span class="online-dot"></span>本地运行</span>${mobileApp ? '<a class="subtle mobile-replay-link" href="#replay">查看复盘</a>' : ''}<button class="subtle" data-action="export">导出存档</button><button class="subtle" data-action="import">导入存档</button><button class="subtle" data-action="new">新开单局</button><input id="import-file" type="file" accept=".json,application/json" hidden /></div></header>
+  <main class="layout"><section class="primary"><div class="headline"><div><p class="eyebrow">GUANDAN / SOLO PRACTICE</p><h1>${inspecting ? '逐步回放' : '单局 Arena'}</h1><p class="muted">单局随机级牌 · 级牌 ${escapeHtml(cards_1.RANK_LABEL[state.level])} · 不升级、不贡还 · 随机首出</p></div><div class="score-strip"><span>我方 <b>${state.players.filter(p => p.seat % 2 === 0 && !p.finished).reduce((n, p) => n + p.hand.length, 0)}</b>张</span><em>VS</em><span>对方 <b>${state.players.filter(p => p.seat % 2 === 1 && !p.finished).reduce((n, p) => n + p.hand.length, 0)}</b>张</span></div></div><div class="arena-hud" role="status"><div class="hud-icon">${status.handoff ? '接' : status.phase === 'reply' ? '压' : '领'}</div><div><strong>${escapeHtml(status.label)}</strong><small>${status.phase === 'reply' ? `最大方 ${names[status.owner]} · 已响应 ${status.responses}/${status.required} · 下一位 ${names[status.next]}` : status.phase === 'lead' ? `牌权：${names[status.owner]} · 本圈第 ${state.trickNo} 圈` : escapeHtml(singleDealSummary(state))}</small></div><div class="hud-progress" aria-label="本圈响应进度">${status.phase === 'reply' ? Array.from({ length: status.required }, (_, i) => `<i class="${i < status.responses ? 'done' : ''}"></i>`).join('') : ''}</div></div><div class="ai-toolbar" role="group" aria-label="AI 决策来源"><span>AI 决策来源</span>${mobileApp ? '<a class="mobile-hand-link" href="#hand-panel">下滑选牌 ↓</a>' : ''}<button type="button" data-action="ai-local" class="tool-chip ${aiMode === 'local' ? 'on' : ''}" aria-pressed="${aiMode === 'local'}">完全离线</button>${mobileApp ? '' : `<button type="button" data-action="ai-loopback" class="tool-chip ${aiMode === 'loopback' ? 'on' : ''}" aria-pressed="${aiMode === 'loopback'}">本机接口（可选）</button>`}<small>${escapeHtml(aiStatus)}</small></div>
+  ${warning ? `<div class="notice warning">${escapeHtml(warning)}</div>` : ''}${error ? `<div class="notice error">${escapeHtml(error)}</div>` : ''}
+  <div class="table"><div class="north">${playerBadge(state, 2)}</div><div class="west">${playerBadge(state, 3)}</div><div class="east">${playerBadge(state, 1)}</div><div class="center"><span class="center-overline">${state.phase === 'finished' ? '本副牌已结束' : last ? `当前最大方 · ${names[last.seat]}` : `${status.handoff ? '搭档接风' : '新一圈'} · ${names[state.turn]}领出`}</span>${last ? `<strong>${(0, rules_1.comboName)(last.combo)}</strong><div class="played-cards">${lastCards}</div>` : `<strong>${status.handoff ? '搭档接风' : '自由领出'}</strong><p>${names[state.turn]}拥有牌权 · 绿色边框标明行动位</p>`}</div><div class="south">${playerBadge(state, 0)}</div></div>
+  <div class="hand-panel" id="hand-panel"><div class="panel-heading"><div><span class="eyebrow">YOUR HAND</span><h2>我的手牌 <small>${myHand.length} 张</small></h2></div><span class="muted">${inspecting ? '历史局面' : myTurn ? '轮到你' : latest.phase === 'finished' ? '本局结束' : 'AI 正在思考'}</span></div><div class="hand-tools"><div class="order-controls" role="group" aria-label="理牌方式"><button data-action="order-combo" class="tool-chip combo-sort ${handOrder === 'combo' ? 'on' : ''}" aria-label="一键按牌型理牌，重新整理整手牌">一键按牌型理牌</button><button data-action="order-rank" class="tool-chip ${handOrder === 'rank' ? 'on' : ''}" aria-pressed="${handOrder === 'rank'}">一键理牌 · 点数</button><button data-action="order-suit" class="tool-chip ${handOrder === 'suit' ? 'on' : ''}" aria-pressed="${handOrder === 'suit'}">一键理牌 · 花色</button><button data-action="order-manual" class="tool-chip ${manualEditing ? 'on' : ''}" aria-pressed="${manualEditing}" ${inspecting ? 'disabled' : ''}>${manualEditing ? '完成理牌' : '手动理牌'}</button></div><div class="hand-tool-end"><button class="tool-chip" data-action="quick-moves" aria-expanded="${quickMovesOpen}" ${myTurn && !manualEditing ? '' : 'disabled'}>基础牌型候选</button><button class="tool-chip pull-button ${pulled ? 'on' : ''}" data-action="pull-flush" aria-expanded="${flushMenuOpen}" ${flushes.length && !manualEditing ? '' : 'disabled'}>拔同花顺 ${flushes.length ? `(${flushes.length})` : ''}</button></div></div>${quickMovesOpen && myTurn ? `<div class="quick-options"><span class="flush-caption">规则引擎验证的部分可出牌型，仅供快速选牌；并非全部合法出法，也不是最优解。</span>${quickMoves.map((move, index) => { const cards = move.map(id => latest.players[0].hand.find(c => c.id === id)); const combo = (0, rules_1.parseCombo)(cards, latest.level); return `<button class="quick-option" data-quick="${index}"><strong>${escapeHtml((0, rules_1.comboName)(combo))}</strong><span>${escapeHtml(cards.map(cards_1.cardLabel).join(' '))}</span></button>`; }).join('') || '<span class="muted">当前没有可出的基础候选；可自行选牌。</span>'}</div>` : ''}${flushMenuOpen ? `<div class="flush-options"><div class="flush-caption">左侧只列真实手牌；括号内注明逢人配替代的点数。点击以提到最前并选中。${inspecting ? '历史局面只展示，不可出牌。' : ''}</div>${flushes.length ? flushes.map((option, index) => `<button class="flush-option" data-flush="${index}"><span class="flush-suit suit-text-${option.suit}">${cards_1.SUIT_LABEL[option.suit]}</span><span>${escapeHtml(option.label)}</span><small>${option.playable ? '牌型可出' : '压不过当前牌'}</small></button>`).join('') : '<span class="muted">当前没有可组成的同花顺</span>'}</div>` : ''}${handMarkup(state, handOrder, pulled, myTurn)}${pulled ? `<p class="pull-status">已拔出：${escapeHtml(pulled.label)} · ${pulled.playable ? '牌型可出' : '压不过当前牌'}${inspecting ? ' · 回放仅展示' : ''}</p>` : ''}<div class="selection-info" aria-live="polite">${escapeHtml(info.text)}</div>${declarationMarkup}<div class="actions"><button class="button-primary" data-action="play" ${myTurn && !manualEditing && info.valid ? '' : 'disabled'}>出牌</button><button class="button-secondary" data-action="pass" ${myTurn && !manualEditing && latest.lastPlay ? '' : 'disabled'}>过牌</button><button class="button-secondary" data-action="hint" ${myTurn && !manualEditing ? '' : 'disabled'}>提示</button><button class="button-secondary" data-action="clear" ${selected.size && myTurn ? '' : 'disabled'}>清除选择</button>${!inspecting && latest.phase === 'finished' ? '<button class="button-primary" data-action="next">再来一局（随机级牌）</button>' : ''}</div></div>
+  ${state.phase === 'finished' ? `<div class="result"><span class="eyebrow">RESULT</span><strong>${escapeHtml(singleDealSummary(state))}</strong></div>` : ''}</section>
+  <aside class="sidebar" id="replay"><div class="side-section"><span class="eyebrow">REPLAY</span><h2>对局回放</h2><p class="muted">已记录 ${frames.length} 个局面。可回看每一步自己当时的手牌与公开出牌。</p><div class="timeline"><button data-action="first" ${cursor === 0 ? 'disabled' : ''}>|‹</button><button data-action="prev" ${cursor === 0 ? 'disabled' : ''}>‹</button><span>${cursor + 1} / ${frames.length}</span><button data-action="forward" ${cursor === frames.length - 1 ? 'disabled' : ''}>›</button><button data-action="live" ${!inspecting ? 'disabled' : ''}>实时</button></div><input type="range" aria-label="回放进度" min="0" max="${frames.length - 1}" value="${cursor}" id="scrub" /><div class="step-label">${escapeHtml(frames[cursor].label)}</div>${inspecting ? '<button class="return-live" data-action="live">返回实时对局</button>' : ''}</div><div class="side-section events"><span class="eyebrow">PUBLIC RECORD</span><h2>最近行动</h2><ol>${historyRows(state)}</ol></div><div class="side-section research"><span class="eyebrow">EXPERIMENTAL ANALYSIS</span><h2>候选模拟</h2>${analysisPanel(cursor)}<p>“提示”采用本地结构策略；在固定种子对战中优于原启发式 AI，但尚非最优解。每一步动态胜率曲线尚未实现；当前仅支持选定决策点的概率粗估。</p><small>${mobileApp ? '手机独立版始终完全离线，不连接本机接口。搜索策略尚未通过手机性能验证，当前使用已冻结的结构策略。' : '默认完全离线；启用本机接口后只向 127.0.0.1 发送当前行动者可见信息及合法候选，不发送存档、种子或对手手牌；服务不可用将回退本地策略。'}</small></div></aside></main><footer>规则与基础 AI 复用 GuanDan Lab（Apache-2.0）；本地入口已修改。该版本用于规则和交互验证，不保证高手棋力。</footer></div>`;
+    const handViewport = document.querySelector('.hand');
+    if (handViewport)
+        handViewport.scrollLeft = handScroll;
+    const extractedViewport = document.querySelector('.extracted-cards');
+    if (extractedViewport)
+        extractedViewport.scrollLeft = extractedScroll;
+    const focusTarget = focused?.card ? Array.from(app.querySelectorAll('button[data-card]')).find(button => button.dataset.card === focused.card)
+        : focused?.action ? Array.from(app.querySelectorAll('button[data-action]')).find(button => button.dataset.action === focused.action) : undefined;
+    if (focusTarget && !focusTarget.disabled)
+        focusTarget.focus({ preventScroll: true });
+    document.querySelector('#scrub').addEventListener('input', e => { if (pendingAnalysis)
+        stopAnalysis(); hintRevision++; replay = Number(e.target.value); manualEditing = false; arrangingCard = null; selected.clear(); selectedDeclaration = null; pulledKey = null; flushMenuOpen = false; quickMovesOpen = false; render(); scheduleAi(); });
+    document.querySelector('#import-file').addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file)
+            return;
+        try {
+            if (file.size > 2_000_000)
+                throw new Error('存档不能超过 2 MB');
+            const restored = JSON.parse(await file.text());
+            const tested = rebuild(restored);
+            if (!confirm('导入后将覆盖当前本地对局。要继续吗？')) {
+                frames = rebuild(session);
+                render();
+                return;
+            }
+            if (aiTimer)
+                clearTimeout(aiTimer);
+            aiRevision++;
+            hintRevision++;
+            stopAnalysis();
+            analysisCache.clear();
+            handLayoutCache.clear();
+            session = restored;
+            frames = tested;
+            replay = -1;
+            manualEditing = false;
+            arrangingCard = null;
+            selected.clear();
+            selectedDeclaration = null;
+            pulledKey = null;
+            flushMenuOpen = false;
+            quickMovesOpen = false;
+            error = '';
+            warning = '';
+            persist();
+            render();
+            scheduleAi();
+        }
+        catch (cause) {
+            frames = rebuild(session);
+            error = cause instanceof Error ? cause.message : '导入失败';
+            render();
+        }
+    });
+}
+function stopAnalysis() {
+    if (analysisTimer)
+        clearTimeout(analysisTimer);
+    analysisTimer = undefined;
+    pendingAnalysis = false;
+    analyzedSamples = 0;
+    analysisResult = null;
+    analysisIndex = -1;
+}
+function startAnalysis(cursor) {
+    if (pendingAnalysis)
+        return;
+    const state = frames[cursor].state;
+    if (state.phase !== 'playing' || state.turn !== 0)
+        return;
+    let original;
+    let originalDeclared;
+    const next = frames[cursor + 1];
+    if (next && next.round === frames[cursor].round) {
+        const events = next.state.events.slice(state.events.length);
+        const action = events.find(e => (e.type === 'play' || e.type === 'pass') && e.seat === 0);
+        if (action) {
+            original = action.type === 'pass' ? null : action.cardIds ?? [];
+            const recorded = session.deals[0].actions[cursor];
+            if (recorded?.kind === 'play' && recorded.seat === 0)
+                originalDeclared = recorded.declared;
+        }
+    }
+    try {
+        const view = (0, analysis_1.project)(state);
+        const options = (0, analysis_1.candidates)(view, original, originalDeclared);
+        const runner = (0, analysis_1.createAnalysisRunner)(view, options, ANALYSIS_SAMPLES, 73691 + cursor * 83);
+        pendingAnalysis = true;
+        analysisIndex = cursor;
+        analyzedSamples = 0;
+        error = '';
+        render();
+        const step = () => {
+            if (!pendingAnalysis || analysisIndex !== cursor)
+                return;
+            try {
+                runner.step();
+                analyzedSamples = runner.completed;
+                if (runner.completed === ANALYSIS_SAMPLES) {
+                    const result = runner.result();
+                    analysisCache.set(cursor, result);
+                    analysisResult = result;
+                    pendingAnalysis = false;
+                    analysisTimer = undefined;
+                    render();
+                }
+                else {
+                    if (runner.completed % 4 === 0)
+                        render();
+                    analysisTimer = setTimeout(step, 0);
+                }
+            }
+            catch (cause) {
+                error = `分析失败：${cause instanceof Error ? cause.message : '未知错误'}`;
+                pendingAnalysis = false;
+                analysisTimer = undefined;
+                render();
+            }
+        };
+        analysisTimer = setTimeout(step, 30);
+    }
+    catch (cause) {
+        error = `分析失败：${cause instanceof Error ? cause.message : '未知错误'}`;
+        pendingAnalysis = false;
+        render();
+    }
+}
+function commit(action) {
+    if (replay >= 0)
+        return;
+    const latest = current();
+    if (session.deals[0].actions.length >= MAX_ACTIONS)
+        throw new Error('单局动作已达到存档上限，请导出存档后新开单局');
+    const next = action.kind === 'play' ? (0, engine_1.playCards)(latest, action.seat, action.cards, action.declared) : (0, engine_1.passTurn)(latest, action.seat);
+    hintRevision++;
+    session.deals[0].actions.push(action);
+    frames.push({ state: next, round: next.roundNo, label: `${names[action.seat]}${action.kind === 'pass' ? '过牌' : `出了 ${action.cards.length} 张`}` });
+    selected.clear();
+    selectedDeclaration = null;
+    arrangingCard = null;
+    pulledKey = null;
+    flushMenuOpen = false;
+    quickMovesOpen = false;
+    error = '';
+    persist();
+    render();
+    scheduleAi();
+}
+function startFreshDeal() {
+    pendingNew = false;
+    if (aiTimer)
+        clearTimeout(aiTimer);
+    aiRevision++;
+    hintRevision++;
+    stopAnalysis();
+    analysisCache.clear();
+    handLayoutCache.clear();
+    session = initialSession();
+    frames = rebuild(session);
+    replay = -1;
+    manualEditing = false;
+    selected.clear();
+    selectedDeclaration = null;
+    arrangingCard = null;
+    pulledKey = null;
+    flushMenuOpen = false;
+    quickMovesOpen = false;
+    error = '';
+    warning = '';
+    persist();
+    render();
+    scheduleAi();
+}
+function scheduleAi() {
+    if (aiTimer)
+        clearTimeout(aiTimer);
+    const revision = ++aiRevision;
+    const state = current();
+    if (replay >= 0 || state.phase !== 'playing' || state.turn === 0)
+        return;
+    aiTimer = setTimeout(async () => {
+        aiTimer = undefined;
+        if (replay >= 0 || current() !== state || revision !== aiRevision)
+            return;
+        try {
+            const request = (0, ai_gateway_1.buildAiRequest)((0, ai_1.observe)(state, state.turn), 'play', `arena-${revision}`);
+            const provider = aiMode === 'loopback' ? (0, ai_gateway_1.loopbackAiProvider)() : ai_gateway_1.localAiProvider;
+            const result = await (0, ai_gateway_1.decideSafely)(request, provider);
+            if (revision !== aiRevision || replay >= 0 || current() !== state)
+                return;
+            aiStatus = result.fallback && aiMode === 'loopback' ? '本机服务不可用或响应非法，已回退本地策略' : result.source === 'structured-v0.11' ? '完全离线 · 结构策略' : `本机服务 · ${result.source}`;
+            commit((0, ai_gateway_1.aiActionToGame)(result.action, state));
+        }
+        catch (cause) {
+            if (revision === aiRevision && current() === state) {
+                error = cause instanceof Error ? cause.message : '机器人行动失败';
+                render();
+            }
+        }
+    }, 170);
+}
+app.addEventListener('click', e => {
+    const button = e.target.closest('button');
+    if (!button || button.disabled)
+        return;
+    const clickRevision = ++hintRevision;
+    const card = button.dataset.card;
+    if (card && replay < 0 && manualEditing) {
+        const state = current();
+        if (arrangingCard && arrangingCard !== card) {
+            saveManual(state, (0, hand_tools_1.moveManualCard)(readManual(state), arrangingCard, card));
+            arrangingCard = null;
+        }
+        else
+            arrangingCard = arrangingCard === card ? null : card;
+        render();
+        return;
+    }
+    if (card && replay < 0 && current().turn === 0) {
+        selected.has(card) ? selected.delete(card) : selected.add(card);
+        selectedDeclaration = null;
+        render();
+        return;
+    }
+    const action = button.dataset.action;
+    try {
+        if (button.dataset.declare !== undefined && replay < 0 && current().turn === 0) {
+            const option = selectedOptions(current())[Number(button.dataset.declare)];
+            if (!option)
+                throw new Error('牌型选择无效');
+            selectedDeclaration = { kind: option.kind, mainRank: option.mainRank, secondaryRank: option.secondaryRank };
+            render();
+            return;
+        }
+        if (action === 'group-selection' && replay < 0 && !manualEditing && selected.size >= 2) {
+            const state = current();
+            const cards = state.players[0].hand.filter(card => selected.has(card.id));
+            if (!(0, rules_1.parseCombo)(cards, state.level))
+                throw new Error('选中的牌不是合法牌型；请重新选择再理成一组。');
+            const layout = handOrder === 'combo' || handOrder === 'manual'
+                ? readManual(state) : (0, hand_tools_1.stackHand)(state.players[0].hand, state.level, handOrder).map(stack => stack.cards.map(card => card.id));
+            saveManual(state, (0, hand_tools_1.groupSelectedCards)(layout, cards.map(card => card.id)));
+            handOrder = 'combo';
+            selected.clear();
+            selectedDeclaration = null;
+            arrangingCard = null;
+            pulledKey = null;
+            try {
+                localStorage.setItem(HAND_ORDER_KEY, handOrder);
+            }
+            catch { /* 会话内仍然有效 */ }
+            render();
+            return;
+        }
+        if (action === 'order-combo' && replay < 0) {
+            const state = current();
+            saveManual(state, (0, hand_tools_1.groupHandByCombos)(state.players[0].hand, state.level));
+            handOrder = 'combo';
+            manualEditing = false;
+            arrangingCard = null;
+            pulledKey = null;
+            flushMenuOpen = false;
+            quickMovesOpen = false;
+            try {
+                localStorage.setItem(HAND_ORDER_KEY, handOrder);
+            }
+            catch { /* 会话内仍然有效 */ }
+            render();
+            return;
+        }
+        if (button.dataset.comboGroup !== undefined && handOrder === 'combo' && !manualEditing && replay < 0 && current().turn === 0) {
+            const pulledIds = new Set((0, hand_tools_1.findStraightFlushes)(current().players[0].hand, current().level, current().lastPlay)
+                .find(option => `${option.ids.slice().sort().join('|')}|${option.high}` === pulledKey)?.ids ?? []);
+            const group = readManual(current())[Number(button.dataset.comboGroup)]?.filter(id => current().players[0].hand.some(card => card.id === id) && !pulledIds.has(id));
+            if (group?.length) {
+                const alreadySelected = group.every(id => selected.has(id)) && selected.size === group.length;
+                selected = alreadySelected ? new Set() : new Set(group);
+                selectedDeclaration = null;
+                render();
+            }
+            return;
+        }
+        if (action === 'order-rank' || action === 'order-suit') {
+            handOrder = action === 'order-rank' ? 'rank' : 'suit';
+            manualEditing = false;
+            arrangingCard = null;
+            pulledKey = null;
+            flushMenuOpen = false;
+            quickMovesOpen = false;
+            try {
+                localStorage.setItem(HAND_ORDER_KEY, handOrder);
+            }
+            catch { /* 会话内仍然有效 */ }
+            render();
+            return;
+        }
+        if (action === 'order-manual' && replay < 0) {
+            if (manualEditing) {
+                manualEditing = false;
+                arrangingCard = null;
+            }
+            else {
+                if (handOrder === 'rank' || handOrder === 'suit') {
+                    const state = current();
+                    const initial = (0, hand_tools_1.stackHand)(state.players[0].hand, state.level, handOrder).map(stack => stack.cards.map(card => card.id));
+                    saveManual(state, initial);
+                    handOrder = 'manual';
+                }
+                manualEditing = true;
+                arrangingCard = null;
+                pulledKey = null;
+                flushMenuOpen = false;
+                quickMovesOpen = false;
+            }
+            try {
+                localStorage.setItem(HAND_ORDER_KEY, handOrder);
+            }
+            catch { /* 会话内仍然有效 */ }
+            render();
+            return;
+        }
+        if (action === 'manual-new' && manualEditing && arrangingCard && replay < 0) {
+            const state = current();
+            saveManual(state, (0, hand_tools_1.moveManualCard)(readManual(state), arrangingCard, null));
+            arrangingCard = null;
+            render();
+            return;
+        }
+        if (action === 'manual-cancel' && manualEditing) {
+            arrangingCard = null;
+            render();
+            return;
+        }
+        if (button.dataset.manualColumn !== undefined && manualEditing && replay < 0) {
+            const state = current();
+            const index = Number(button.dataset.manualColumn), direction = Number(button.dataset.direction);
+            if (Number.isInteger(index) && (direction === -1 || direction === 1))
+                saveManual(state, (0, hand_tools_1.moveManualColumn)(readManual(state), index, direction));
+            render();
+            return;
+        }
+        if (action === 'pull-flush') {
+            flushMenuOpen = !flushMenuOpen;
+            quickMovesOpen = false;
+            render();
+            return;
+        }
+        if (action === 'quick-moves') {
+            quickMovesOpen = !quickMovesOpen;
+            flushMenuOpen = false;
+            render();
+            return;
+        }
+        if (button.dataset.quick !== undefined) {
+            const move = quickOptions(current())[Number(button.dataset.quick)];
+            if (move && replay < 0) {
+                selected = new Set(move);
+                selectedDeclaration = null;
+                quickMovesOpen = false;
+                render();
+            }
+            return;
+        }
+        if (button.dataset.flush !== undefined) {
+            const index = Number(button.dataset.flush);
+            const state = shown();
+            const options = (0, hand_tools_1.findStraightFlushes)(state.players[0].hand, state.level, state.lastPlay);
+            if (!Number.isInteger(index) || !options[index])
+                return;
+            const option = options[index];
+            pulledKey = `${option.ids.slice().sort().join('|')}|${option.high}`;
+            flushMenuOpen = false;
+            if (replay < 0 && state.turn === 0 && state.phase === 'playing') {
+                selected = new Set(option.ids);
+                selectedDeclaration = selectedOptions(state).length > 1 ? option.declaration : null;
+            }
+            render();
+            return;
+        }
+        if (action === 'export') {
+            if (mobileApp) {
+                const text = JSON.stringify(session);
+                const file = new File([text], `guandan-session-${new Date().toISOString().slice(0, 10)}.json`, { type: 'application/json' });
+                void (async () => {
+                    try {
+                        if (navigator.canShare?.({ files: [file] })) {
+                            await navigator.share({ files: [file], title: '掼蛋对局存档' });
+                            return;
+                        }
+                        await navigator.clipboard.writeText(text);
+                        warning = '当前设备不支持文件分享，已将存档复制到剪贴板；请粘贴到安全位置保存。';
+                        render();
+                    }
+                    catch (cause) {
+                        if (cause instanceof Error && cause.name === 'AbortError')
+                            return;
+                        error = '无法分享或复制存档，请检查系统文件分享与剪贴板权限。';
+                        render();
+                    }
+                })();
+                return;
+            }
+            const blob = new Blob([JSON.stringify(session)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `guandan-session-${new Date().toISOString().slice(0, 10)}.json`;
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            return;
+        }
+        if (action === 'import') {
+            document.querySelector('#import-file')?.click();
+            return;
+        }
+        if (action === 'ai-local' || (action === 'ai-loopback' && !mobileApp)) {
+            aiMode = action === 'ai-local' ? 'local' : 'loopback';
+            aiStatus = aiMode === 'local' ? '完全离线 · 不使用网络' : '本机接口 127.0.0.1:17364 · 不可用时自动回退';
+            try {
+                localStorage.setItem(AI_MODE_KEY, aiMode);
+            }
+            catch { /* 当前会话仍有效 */ }
+            error = '';
+            scheduleAi();
+            render();
+            return;
+        }
+        if (action === 'new') {
+            if (mobileApp) {
+                if (confirm('新开单局会覆盖当前存档，建议先导出。确定继续吗？'))
+                    startFreshDeal();
+                return;
+            }
+            if (!pendingNew) {
+                pendingNew = true;
+                error = '再次点击“新开单局”将覆盖当前单局存档；可先导出保存。';
+                render();
+                return;
+            }
+            startFreshDeal();
+            return;
+        }
+        pendingNew = false;
+        if (action === 'analyze') {
+            startAnalysis(replay < 0 ? frames.length - 1 : replay);
+            return;
+        }
+        if (action === 'play') {
+            const cards = [...selected];
+            if (selectedOptions(current()).length > 1 && !selectedDeclaration)
+                throw new Error('请先声明逢人配牌型');
+            const declared = selectedDeclaration ?? undefined;
+            const check = (0, engine_1.legalPlay)(current(), 0, cards, declared);
+            if (!check.ok)
+                throw new Error(check.reason);
+            commit({ kind: 'play', seat: 0, cards, declared });
+        }
+        else if (action === 'pass')
+            commit({ kind: 'pass', seat: 0 });
+        else if (action === 'hint') {
+            const state = current();
+            if (state.phase !== 'playing' || state.turn !== 0 || replay >= 0)
+                return;
+            const request = (0, ai_gateway_1.buildAiRequest)((0, ai_1.observe)(state, 0), 'hint', `hint-${clickRevision}`);
+            error = '正在生成建议…';
+            render();
+            void (0, ai_gateway_1.decideSafely)(request, aiMode === 'loopback' ? (0, ai_gateway_1.loopbackAiProvider)() : ai_gateway_1.localAiProvider).then(result => {
+                if (hintRevision !== clickRevision || replay >= 0 || current() !== state)
+                    return;
+                selected = new Set(result.action.cards ?? []);
+                selectedDeclaration = result.action.declared ?? null;
+                aiStatus = result.fallback && aiMode === 'loopback' ? '本机服务不可用或响应非法，已回退本地策略' : `建议来源 · ${result.source}`;
+                error = result.action.cards ? '已选中 AI 建议：请确认牌型后自行决定是否出牌；这不是唯一最优解。' : 'AI 建议过牌；你仍可自行出牌。';
+                render();
+            }).catch(cause => { if (hintRevision === clickRevision) {
+                error = cause instanceof Error ? cause.message : '提示失败';
+                render();
+            } });
+        }
+        else if (action === 'clear') {
+            selected.clear();
+            selectedDeclaration = null;
+            error = '';
+            render();
+        }
+        else if (action === 'next' && current().phase === 'finished')
+            startFreshDeal();
+        else if (['first', 'prev', 'forward', 'live'].includes(action || '')) {
+            const cursor = replay < 0 ? frames.length - 1 : replay;
+            replay = action === 'live' ? -1 : action === 'first' ? 0 : action === 'prev' ? Math.max(0, cursor - 1) : Math.min(frames.length - 1, cursor + 1);
+            if (replay === frames.length - 1)
+                replay = -1;
+            manualEditing = false;
+            arrangingCard = null;
+            if (pendingAnalysis)
+                stopAnalysis();
+            selected.clear();
+            selectedDeclaration = null;
+            arrangingCard = null;
+            pulledKey = null;
+            flushMenuOpen = false;
+            quickMovesOpen = false;
+            render();
+            scheduleAi();
+        }
+    }
+    catch (cause) {
+        error = cause instanceof Error ? cause.message : '操作失败';
+        render();
+    }
+});
+try {
+    const saved = localStorage.getItem(HAND_ORDER_KEY);
+    handOrder = saved === 'suit' || saved === 'manual' || saved === 'combo' ? saved : 'rank';
+}
+catch {
+    handOrder = 'rank';
+}
+try {
+    aiMode = !mobileApp && localStorage.getItem(AI_MODE_KEY) === 'loopback' ? 'loopback' : 'local';
+}
+catch {
+    aiMode = 'local';
+}
+aiStatus = aiMode === 'loopback' ? '本机接口 127.0.0.1:17364 · 不可用时自动回退' : '完全离线 · 不使用网络';
+session = load();
+render();
+scheduleAi();
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(() => { }); });
+}
+
+},
+"offline/analysis": function(require, module, exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.project = project;
+exports.candidateKey = candidateKey;
+exports.analysisMoves = analysisMoves;
+exports.candidates = candidates;
+exports.sampleHidden = sampleHidden;
+exports.assessLeader = assessLeader;
+exports.createAnalysisRunner = createAnalysisRunner;
+exports.analyze = analyze;
+const ai_1 = require("../lib/game/ai");
+const cards_1 = require("../lib/game/cards");
+const engine_1 = require("../lib/game/engine");
+const rules_1 = require("../lib/game/rules");
+const strong_ai_1 = require("./strong-ai");
+// Deliberately constructs a data-transfer object without GameState.seed or any opponent hand.
+function project(state) {
+    if (state.phase !== 'playing' || state.turn !== 0)
+        throw new Error('只能分析轮到你的决策前局面');
+    return {
+        hand: state.players[0].hand.map(c => ({ ...c })), level: state.level, turn: 0,
+        lastPlay: state.lastPlay ? { seat: state.lastPlay.seat, cardIds: [...state.lastPlay.cardIds], combo: { ...state.lastPlay.combo, cards: state.lastPlay.combo.cards.map(c => ({ ...c })), wildIds: [...state.lastPlay.combo.wildIds] } } : null,
+        passes: state.passes, counts: state.players.map(p => p.hand.length), finishOrder: [...state.finishOrder],
+        events: state.events.filter(e => ['play', 'pass', 'trick', 'finish'].includes(e.type)).map(e => ({ id: e.id, type: e.type, at: e.at, seat: e.seat, cardIds: e.cardIds ? [...e.cardIds] : undefined })),
+    };
+}
+function candidateKey(cards, declared) { return cards === null ? 'pass' : `${[...cards].sort().join('|')}${declared ? `#${declared.kind}:${declared.mainRank}:${declared.secondaryRank ?? ''}` : ''}`; }
+/** Replay and live play now share candidate generation and the same rules validator.
+ * Above eight cards, both modes are bounded representatives rather than exhaustive actions.
+ */
+function analysisMoves(view) {
+    return (0, ai_1.legalMoves)({ hand: view.hand, level: view.level, turn: view.turn,
+        counts: view.counts, lastPlay: view.lastPlay, events: view.events,
+        seat: 0, role: 'you', persona: 'learner' }, 'analysis');
+}
+function candidates(view, original, originalDeclared) {
+    const byId = new Map(view.hand.map(c => [c.id, c]));
+    const base = { hand: view.hand, level: view.level, turn: view.turn, counts: view.counts, lastPlay: view.lastPlay, events: view.events, seat: 0, role: 'you', persona: 'learner' };
+    const moves = analysisMoves(view);
+    const info = (move) => (0, rules_1.parseCombo)(move.map(id => byId.get(id)), view.level);
+    const special = (move) => ['bomb', 'straightFlush', 'jokerBomb'].includes(info(move).kind);
+    const score = (move) => info(move).mainRank - move.length * 5 + move.filter(id => byId.get(id).suit === 'H' && byId.get(id).rank === view.level).length * 8;
+    const ordinary = moves.filter(move => !special(move)).sort((a, b) => score(a) - score(b) || candidateKey(a).localeCompare(candidateKey(b)));
+    const bombs = moves.filter(special).sort((a, b) => info(a).size - info(b).size || info(a).mainRank - info(b).mainRank);
+    const result = [];
+    const add = (cards, originalChoice = false, declared) => {
+        if (cards === null && !view.lastPlay)
+            return;
+        if (cards !== null && (!cards.length || new Set(cards).size !== cards.length || cards.some(id => !byId.has(id))))
+            return;
+        const combo = cards ? (0, rules_1.parseCombo)(cards.map(id => byId.get(id)), view.level, declared) : null;
+        if (cards && (!combo || (view.lastPlay && !(0, rules_1.beats)(combo, view.lastPlay.combo))))
+            return;
+        const key = candidateKey(cards, declared);
+        if (result.some(c => c.key === key)) {
+            if (originalChoice)
+                result.find(c => c.key === key).original = true;
+            return;
+        }
+        if (result.length >= 5)
+            return;
+        result.push({ cards, declared, key, original: originalChoice, label: cards ? `${(0, rules_1.comboName)(combo)} · ${cards.map(id => {
+                const c = byId.get(id);
+                return `${c.suit === 'J' ? '' : { S: '♠', H: '♥', C: '♣', D: '♦' }[c.suit]}${c.rank === 14 ? 'A' : c.rank === 13 ? 'K' : c.rank === 12 ? 'Q' : c.rank === 11 ? 'J' : c.rank === 15 ? '小王' : c.rank === 16 ? '大王' : c.rank}`;
+            }).join(' ')}` : '过牌' });
+    };
+    if (original !== undefined)
+        add(original, true, originalDeclared);
+    const baseline = (0, ai_1.chooseAiMove)(base);
+    const current = (0, strong_ai_1.chooseStructuredMove)(base);
+    const previous = (0, strong_ai_1.chooseLegacyStructuredMove)(base);
+    const expanded = (0, strong_ai_1.chooseExpandedStructuredMove)(base);
+    // Compare the current policy to the frozen predecessor and expanded-action experiment.
+    if (current !== null)
+        add(current);
+    if (view.lastPlay)
+        add(null);
+    if (previous !== null)
+        add(previous);
+    if (expanded !== null)
+        add(expanded);
+    if (baseline)
+        add(baseline);
+    if (bombs.length)
+        add(bombs[0]);
+    if (ordinary.length)
+        add(ordinary[0]);
+    const longest = [...ordinary].sort((a, b) => b.length - a.length || score(a) - score(b));
+    if (longest.length)
+        add(longest[0]);
+    for (const move of [...longest, ...ordinary, ...bombs]) {
+        if (result.length >= 5)
+            break;
+        add(move);
+    }
+    return result;
+}
+function sampleHidden(view, seed) {
+    if (view.counts.length !== 4 || view.counts.some(c => !Number.isInteger(c) || c < 0 || c > 27))
+        throw new Error('剩余张数无效');
+    const deck = (0, cards_1.createDeck)();
+    const valid = new Set(deck.map(c => c.id));
+    const played = view.events.filter(e => e.type === 'play').flatMap(e => e.cardIds ?? []);
+    const used = [...view.hand.map(c => c.id), ...played];
+    if (new Set(used).size !== used.length || used.some(id => !valid.has(id)) || view.counts[0] !== view.hand.length)
+        throw new Error('已知牌不一致');
+    const unknown = (0, cards_1.shuffle)(deck.filter(c => !used.includes(c.id)), seed);
+    if (view.counts[1] + view.counts[2] + view.counts[3] !== unknown.length)
+        throw new Error('公开剩余张数与牌数不一致');
+    let offset = 0;
+    const players = [0, 1, 2, 3].map(seat => {
+        const hand = seat === 0 ? [...view.hand] : unknown.slice(offset, offset += view.counts[seat]);
+        return { seat, name: ['你', '王总', '小顾', '林姐'][seat], role: ['you', 'boss', 'partner', 'opponent'][seat], hand, finished: view.finishOrder.includes(seat) ? view.finishOrder.indexOf(seat) + 1 : undefined };
+    });
+    return {
+        schemaVersion: 2, ruleVersion: '竞技掼蛋2022-教学版', seed: 0, createdAt: 0, level: view.level,
+        levelOwner: null, phase: 'playing', players, turn: view.turn, leader: view.lastPlay?.seat ?? view.turn,
+        lastPlay: view.lastPlay, passes: view.passes, finishOrder: [...view.finishOrder], events: view.events,
+        trickNo: 0, roundNo: 1, teamLevels: [view.level, view.level], matchWinner: null,
+    };
+}
+function rollout(sample, candidate) {
+    let state = candidate.cards ? (0, engine_1.playCards)(sample, 0, candidate.cards, candidate.declared) : (0, engine_1.passTurn)(sample, 0);
+    for (let step = 0; state.phase === 'playing' && step < 240; step++) {
+        const seat = state.turn;
+        const o = (0, ai_1.observe)(state, seat);
+        const choice = (0, strong_ai_1.chooseStructuredMove)(o);
+        if (choice)
+            state = (0, engine_1.playCards)(state, seat, choice);
+        else if (state.lastPlay)
+            state = (0, engine_1.passTurn)(state, seat);
+        else {
+            const fallback = (0, ai_1.legalMoves)(o)[0];
+            if (!fallback)
+                return null;
+            state = (0, engine_1.playCards)(state, seat, fallback);
+        }
+    }
+    return state.phase === 'finished' ? state.finishOrder[0] % 2 === 0 : null;
+}
+function wilson(wins, n, z = 1.96) {
+    if (!n)
+        return [0, 1];
+    const p = wins / n, d = 1 + z * z / n;
+    const c = (p + z * z / (2 * n)) / d;
+    const r = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d;
+    return [Math.max(0, c - r), Math.min(1, c + r)];
+}
+function pairedDifference(a, b) {
+    const paired = a.flatMap((value, i) => value === null || b[i] == null ? [] : [Number(value) - Number(b[i])]);
+    const mean = paired.reduce((sum, n) => sum + n, 0) / (paired.length || 1);
+    const variance = paired.length > 1 ? paired.reduce((sum, n) => sum + (n - mean) ** 2, 0) / (paired.length - 1) : 0;
+    const radius = paired.length > 1 ? 1.96 * Math.sqrt(variance / paired.length) : 1;
+    return { mean, low: Math.max(-1, mean - radius), high: Math.min(1, mean + radius), completed: paired.length };
+}
+/** A sampled leader is not a mathematically optimal play, nor a calibrated win probability. */
+function assessLeader(outcomes) {
+    if (!outcomes.length)
+        return { index: null, separated: false };
+    const stats = outcomes.map(row => ({ wins: row.filter(Boolean).length, completed: row.filter(value => value !== null).length }));
+    const scores = stats.map(s => s.completed ? wilson(s.wins, s.completed, 1.28)[0] : -1);
+    const best = Math.max(...scores);
+    const leaders = scores.flatMap((score, index) => score === best && score >= 0 ? [index] : []);
+    if (leaders.length !== 1)
+        return { index: null, separated: false };
+    const index = leaders[0];
+    // Paired intervals are descriptive only; the threshold prevents tiny samples being labeled distinct.
+    const separated = outcomes.length > 1 && outcomes.every((row, other) => {
+        if (other === index)
+            return true;
+        const diff = pairedDifference(outcomes[index], row);
+        return diff.completed >= 8 && diff.low > 0;
+    });
+    return { index, separated };
+}
+function createAnalysisRunner(view, options, samples = 12, seed = 73691) {
+    if (!Number.isInteger(samples) || samples < 2 || samples > 120 || !options.length || options.length > 5 || view.turn !== 0)
+        throw new Error('分析参数无效');
+    const outcomes = options.map(() => []);
+    let completed = 0;
+    return {
+        get completed() { return completed; },
+        step() {
+            if (completed >= samples)
+                return;
+            const sample = sampleHidden(view, seed + completed * 7919);
+            for (let j = 0; j < options.length; j++)
+                outcomes[j].push(rollout(sample, options[j]));
+            completed++;
+        },
+        result() {
+            if (completed !== samples)
+                throw new Error('抽样尚未完成');
+            const baseline = outcomes[0];
+            const estimates = options.map((candidate, index) => {
+                const finished = outcomes[index].filter(value => value !== null);
+                const wins = finished.filter(Boolean).length;
+                const [low, high] = wilson(wins, finished.length);
+                const paired = pairedDifference(outcomes[index], baseline);
+                return { candidate, wins, completed: finished.length, probability: finished.length ? wins / finished.length : 0, low, high,
+                    pairedGap: paired.mean, pairedLow: paired.low, pairedHigh: paired.high };
+            });
+            const leader = assessLeader(outcomes);
+            return { estimates, samples, seed, leadingKey: leader.index === null ? null : options[leader.index].key, separated: leader.separated,
+                metric: '本副牌本队取得头游', model: '可见信息随机暗牌分配 + 本地结构策略；未按历史行为更新暗牌先验或校准概率' };
+        },
+    };
+}
+function analyze(view, options, samples = 12, seed = 73691) {
+    const runner = createAnalysisRunner(view, options, samples, seed);
+    while (runner.completed < samples)
+        runner.step();
+    return runner.result();
+}
+
+},
+"offline/hand-tools": function(require, module, exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.arrangeHand = arrangeHand;
+exports.stackHand = stackHand;
+exports.findStraightFlushes = findStraightFlushes;
+exports.handGroupLabel = handGroupLabel;
+exports.groupHandByCombos = groupHandByCombos;
+exports.groupSelectedCards = groupSelectedCards;
+exports.manualHandStacks = manualHandStacks;
+exports.moveManualCard = moveManualCard;
+exports.moveManualColumn = moveManualColumn;
+exports.pulledHand = pulledHand;
+const cards_1 = require("../lib/game/cards");
+const rules_1 = require("../lib/game/rules");
+const suits = ['S', 'H', 'C', 'D'];
+const suitOrder = (suit) => suit === 'J' ? 4 : suits.indexOf(suit);
+/** Display-only ordering: it never changes the game engine's hand or saved replay. */
+function arrangeHand(hand, level, order) {
+    return [...hand].sort((a, b) => order === 'suit'
+        ? suitOrder(a.suit) - suitOrder(b.suit) || (0, cards_1.rankPower)(a.rank, level) - (0, cards_1.rankPower)(b.rank, level) || a.deck - b.deck
+        : (0, cards_1.rankPower)(a.rank, level) - (0, cards_1.rankPower)(b.rank, level) || suitOrder(a.suit) - suitOrder(b.suit) || a.deck - b.deck);
+}
+/** Group the display order into overlapping vertical stacks without touching the rules hand. */
+function stackHand(hand, level, order) {
+    const groups = new Map();
+    for (const card of arrangeHand(hand, level, order)) {
+        const key = order === 'rank' ? `${card.rank}` : `${card.suit}-${card.rank}`;
+        let stack = groups.get(key);
+        if (!stack) {
+            stack = { key, label: order === 'rank' ? cards_1.RANK_LABEL[card.rank] : `${cards_1.SUIT_LABEL[card.suit]}${cards_1.RANK_LABEL[card.rank]}`, cards: [] };
+            groups.set(key, stack);
+        }
+        stack.cards.push(card);
+    }
+    return [...groups.values()];
+}
+/** Enumerate physical five-card flushes, including two-deck alternatives and red-heart-level wilds.
+ * Final classification and whether the play beats the current trick come from the shared rules core.
+ */
+function findStraightFlushes(hand, level, lastPlay) {
+    const wilds = hand.filter(c => c.suit === 'H' && c.rank === level).sort((a, b) => a.deck - b.deck);
+    const windows = [[14, 2, 3, 4, 5], ...Array.from({ length: 9 }, (_, i) => Array.from({ length: 5 }, (_, j) => i + 2 + j))];
+    const found = new Map();
+    for (const suit of suits)
+        for (const window of windows) {
+            const byRank = window.map(rank => hand.filter(c => c.suit === suit && c.rank === rank && !wilds.includes(c)));
+            if (byRank.filter(cards => !cards.length).length > wilds.length)
+                continue;
+            const high = window[0] === 14 ? 5 : window[4];
+            const visit = (index, chosen, substitutions) => {
+                if (index === window.length) {
+                    // Keep representative physical cards for each visible strength and wild usage.
+                    const key = `${suit}|${high}|${substitutions.length}`;
+                    if (found.has(key) || new Set(chosen.map(c => c.id)).size !== 5)
+                        return;
+                    const combo = (0, rules_1.comboOptions)(chosen, level).find(c => c.kind === 'straightFlush' && c.mainRank === high);
+                    if (!combo)
+                        return;
+                    found.set(key, {
+                        cards: chosen, ids: chosen.map(c => c.id), suit, high, wildCount: substitutions.length,
+                        declaration: { kind: 'straightFlush', mainRank: high },
+                        playable: (0, rules_1.beats)(combo, lastPlay?.combo ?? null),
+                        // The first part lists ONLY physical cards actually present in the hand.
+                        label: `${chosen.map(cards_1.cardLabel).join(' · ')}${substitutions.length ? `（逢人配代 ${substitutions.map(rank => cards_1.RANK_LABEL[rank]).join('、')}；组成 ${cards_1.SUIT_LABEL[suit]}${window.map(rank => cards_1.RANK_LABEL[rank]).join('')}）` : ''}`,
+                    });
+                    return;
+                }
+                for (const card of byRank[index])
+                    visit(index + 1, [...chosen, card], substitutions);
+                for (const card of wilds)
+                    if (!chosen.includes(card))
+                        visit(index + 1, [...chosen, card], [...substitutions, window[index]]);
+            };
+            visit(0, [], []);
+        }
+    return [...found.values()].sort((a, b) => Number(b.playable) - Number(a.playable)
+        || a.wildCount - b.wildCount || a.high - b.high || suitOrder(a.suit) - suitOrder(b.suit)
+        || a.ids.join('|').localeCompare(b.ids.join('|')));
+}
+function handGroupLabel(cards, level) {
+    const combo = (0, rules_1.parseCombo)(cards, level);
+    return combo ? (0, rules_1.comboName)(combo) : '自定义';
+}
+/** Build a bounded, deterministic partition of physical cards into playable shapes.
+ * This is display-only, not a search over opponents or a claim of optimal play.
+ */
+function groupHandByCombos(hand, level) {
+    if (!hand.length)
+        return [];
+    if (hand.length > 27)
+        throw new Error('单人手牌超过 27 张');
+    const sorted = arrangeHand(hand, level, 'rank');
+    const index = new Map(sorted.map((card, i) => [card.id, i]));
+    const wilds = sorted.filter(card => card.suit === 'H' && card.rank === level);
+    const naturals = sorted.filter(card => !wilds.includes(card));
+    const choices = new Map();
+    const comboCache = new Map();
+    const add = (cards) => {
+        if (!cards.length || new Set(cards.map(card => card.id)).size !== cards.length)
+            return;
+        const mask = cards.reduce((value, card) => value | (1 << index.get(card.id)), 0);
+        if (choices.has(mask))
+            return;
+        let combo = comboCache.get(mask);
+        if (combo === undefined) {
+            combo = (0, rules_1.parseCombo)(cards, level);
+            comboCache.set(mask, combo);
+        }
+        if (!combo)
+            return;
+        const spent = cards.filter(card => wilds.includes(card)).length;
+        // Fewer hands first. Protect scarce wilds and prefer trump groups when hand-count ties.
+        const priority = combo.kind === 'jokerBomb' ? 240 : combo.kind === 'straightFlush' ? 210 : combo.kind === 'bomb' ? 170 : 0;
+        choices.set(mask, { mask, cards, price: 1000 + spent * 36 - priority + combo.mainRank * 0.01 });
+    };
+    const pick = (rank, count, suit) => {
+        const available = naturals.filter(card => card.rank === rank && (!suit || card.suit === suit));
+        const result = [];
+        // A wildcard may replace a natural card even when the rank is complete: that
+        // natural card can then finish a different shape in the display partition.
+        for (let used = Math.max(0, count - available.length); used <= Math.min(count, wilds.length); used++) {
+            const n = count - used;
+            const variants = [];
+            if (n <= 3) {
+                const collect = (start, picked) => {
+                    if (picked.length === n) {
+                        variants.push(picked);
+                        return;
+                    }
+                    for (let i = start; i <= available.length - (n - picked.length); i++)
+                        collect(i + 1, [...picked, available[i]]);
+                };
+                collect(0, []);
+            }
+            else if (available.length >= n)
+                variants.push(available.slice(0, n), available.slice(-n));
+            if (!variants.length || variants[0].length !== n)
+                continue;
+            const extras = used === 0 ? [[]] : used === 1 ? wilds.map(card => [card]) : [wilds];
+            for (const cards of variants)
+                for (const extra of extras)
+                    result.push([...cards, ...extra]);
+        }
+        return result;
+    };
+    const patterns = (ranks, count, suit) => {
+        const visit = (position, cards) => {
+            if (position === ranks.length) {
+                add(cards);
+                return;
+            }
+            for (const group of pick(ranks[position], count, suit)) {
+                if (group.some(card => cards.includes(card)))
+                    continue;
+                visit(position + 1, [...cards, ...group]);
+            }
+        };
+        visit(0, []);
+    };
+    for (const card of sorted)
+        add([card]);
+    for (let rank = 2; rank <= 16; rank++)
+        for (const size of [2, 3])
+            for (const group of pick(rank, size))
+                add(group);
+    for (let rank = 2; rank <= 14; rank++) {
+        const present = naturals.filter(card => card.rank === rank);
+        for (let size = 4; size <= Math.min(10, present.length + wilds.length); size++) {
+            // Do not spend a wildcard to form an otherwise available smaller bomb by default.
+            for (const group of pick(rank, size))
+                add(group);
+        }
+    }
+    add(sorted.filter(card => card.suit === 'J'));
+    for (let triple = 2; triple <= 14; triple++)
+        for (let pair = 2; pair <= 14; pair++) {
+            if (triple === pair)
+                continue;
+            for (const a of pick(triple, 3))
+                for (const b of pick(pair, 2)) {
+                    if (a.some(card => b.includes(card)))
+                        continue;
+                    add([...a, ...b]);
+                }
+        }
+    const straightWindows = [[14, 2, 3, 4, 5], ...Array.from({ length: 9 }, (_, i) => Array.from({ length: 5 }, (_, j) => 2 + i + j))];
+    for (const window of straightWindows) {
+        patterns(window, 1);
+        for (const suit of suits)
+            patterns(window, 1, suit);
+    }
+    for (let rank = 2; rank <= 12; rank++)
+        patterns([rank, rank + 1, rank + 2], 2);
+    for (let rank = 2; rank <= 13; rank++)
+        patterns([rank, rank + 1], 3);
+    // Reuse the already tested finder for suit sequences and double-deck choices.
+    for (const option of findStraightFlushes(sorted, level, null))
+        add(option.cards);
+    const byCard = Array.from({ length: sorted.length }, () => []);
+    for (const choice of choices.values())
+        for (let bit = 0; bit < sorted.length; bit++)
+            if (choice.mask & (1 << bit))
+                byCard[bit].push(choice);
+    for (const list of byCard)
+        list.sort((a, b) => a.price / a.cards.length - b.price / b.cards.length || a.mask - b.mask);
+    const full = (1 << sorted.length) - 1;
+    const memo = new Map();
+    let remainingBudget = 2800;
+    const solve = (available) => {
+        if (!available)
+            return { price: 0, groups: [] };
+        const cached = memo.get(available);
+        if (cached)
+            return cached;
+        // Bounded fallback is always a valid partition, even for unusually dense hands.
+        if (--remainingBudget < 0) {
+            const bit = 31 - Math.clz32(available & -available);
+            const candidate = byCard[bit].find(group => group.mask === (1 << bit));
+            const rest = solve(available ^ candidate.mask);
+            return { price: candidate.price + rest.price, groups: [candidate.cards, ...rest.groups] };
+        }
+        let pivot = -1, fewest = Infinity;
+        for (let bit = 0; bit < sorted.length; bit++)
+            if (available & (1 << bit)) {
+                const count = byCard[bit].filter(group => (group.mask & available) === group.mask).length;
+                if (count < fewest) {
+                    fewest = count;
+                    pivot = bit;
+                }
+            }
+        let best = { price: Infinity, groups: [] };
+        for (const candidate of byCard[pivot]) {
+            if ((candidate.mask & available) !== candidate.mask)
+                continue;
+            const rest = solve(available ^ candidate.mask);
+            const price = candidate.price + rest.price;
+            if (price < best.price)
+                best = { price, groups: [candidate.cards, ...rest.groups] };
+        }
+        memo.set(available, best);
+        return best;
+    };
+    const result = solve(full).groups;
+    // One group for each play: show individual ranks in sequence and keep trump/wilds recognizable.
+    const order = (cards) => {
+        const combo = (0, rules_1.parseCombo)(cards, level);
+        return combo.kind === 'jokerBomb' ? 0 : combo.kind === 'straightFlush' ? 1 : combo.kind === 'bomb' ? 2 : combo.kind === 'plate' ? 3 : combo.kind === 'tube' ? 4 : combo.kind === 'triplePair' ? 5 : combo.kind === 'straight' ? 6 : combo.kind === 'triple' ? 7 : combo.kind === 'pair' ? 8 : 9;
+    };
+    return result.sort((a, b) => order(a) - order(b) || a[0].rank - b[0].rank).map(cards => cards.map(card => card.id));
+}
+function groupSelectedCards(stacks, ids) {
+    const selected = new Set(ids);
+    const available = new Set(stacks.flat());
+    if (selected.size < 2 || selected.size !== ids.length || ids.some(id => !available.has(id)))
+        return stacks.map(group => [...group]);
+    const remaining = stacks.map(group => group.filter(id => !selected.has(id))).filter(group => group.length);
+    return [[...ids], ...remaining];
+}
+/** User-arranged stacks store physical card IDs only; removed cards are dropped on display. */
+function manualHandStacks(hand, level, stored, fallback = 'rank') {
+    const valid = new Set(hand.map(card => card.id));
+    const seen = new Set();
+    const stacks = [];
+    if (Array.isArray(stored))
+        for (const group of stored.slice(0, 108)) {
+            if (!Array.isArray(group))
+                continue;
+            const cards = [];
+            for (const id of group.slice(0, 108))
+                if (typeof id === 'string' && valid.has(id) && !seen.has(id)) {
+                    cards.push(id);
+                    seen.add(id);
+                }
+            if (cards.length)
+                stacks.push(cards);
+        }
+    for (const group of stackHand(hand.filter(card => !seen.has(card.id)), level, fallback))
+        stacks.push(group.cards.map(card => card.id));
+    return stacks;
+}
+function moveManualCard(stacks, source, target) {
+    const next = stacks.map(group => [...group]);
+    if (!next.some(group => group.includes(source)) || (target !== null && !next.some(group => group.includes(target))) || source === target)
+        return next;
+    for (const group of next) {
+        const index = group.indexOf(source);
+        if (index !== -1) {
+            group.splice(index, 1);
+            break;
+        }
+    }
+    const nonempty = next.filter(group => group.length);
+    if (target === null)
+        nonempty.push([source]);
+    else {
+        const group = nonempty.find(cards => cards.includes(target));
+        group.splice(group.indexOf(target), 0, source);
+    }
+    return nonempty;
+}
+function moveManualColumn(stacks, index, direction) {
+    const next = stacks.map(group => [...group]);
+    const destination = index + direction;
+    if (!Number.isInteger(index) || index < 0 || destination < 0 || destination >= next.length)
+        return next;
+    [next[index], next[destination]] = [next[destination], next[index]];
+    return next;
+}
+function pulledHand(hand, level, order, flush) {
+    if (!flush)
+        return arrangeHand(hand, level, order);
+    const ids = new Set(flush.ids);
+    return [...flush.cards, ...arrangeHand(hand.filter(c => !ids.has(c.id)), level, order)];
+}
+
+},
+"offline/ai-gateway": function(require, module, exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.localAiProvider = void 0;
+exports.actionKey = actionKey;
+exports.validAiAction = validAiAction;
+exports.publicAiView = publicAiView;
+exports.buildAiRequest = buildAiRequest;
+exports.verifyAiReply = verifyAiReply;
+exports.loopbackAiProvider = loopbackAiProvider;
+exports.decideSafely = decideSafely;
+exports.aiActionToGame = aiActionToGame;
+const ai_1 = require("../lib/game/ai");
+const rules_1 = require("../lib/game/rules");
+const strong_ai_1 = require("./strong-ai");
+function actionKey(action) {
+    return action.cards === null ? 'pass' : `${[...action.cards].sort().join('|')}#${action.declared ? `${action.declared.kind}:${action.declared.mainRank}:${action.declared.secondaryRank ?? ''}` : 'default'}`;
+}
+function validAiAction(view, action) {
+    if (!action || typeof action !== 'object')
+        return false;
+    if (action.cards === null)
+        return !!view.lastPlay && action.declared === undefined;
+    if (!Array.isArray(action.cards) || !action.cards.length || action.cards.length > view.hand.length || action.cards.some(id => typeof id !== 'string') || new Set(action.cards).size !== action.cards.length)
+        return false;
+    const byId = new Map(view.hand.map(card => [card.id, card]));
+    const cards = action.cards.map(id => byId.get(id));
+    if (cards.some(card => !card))
+        return false;
+    if (action.declared !== undefined && (!action.declared || !['single', 'pair', 'triple', 'triplePair', 'straight', 'tube', 'plate', 'bomb', 'straightFlush', 'jokerBomb'].includes(action.declared.kind) || !Number.isFinite(action.declared.mainRank)))
+        return false;
+    const combo = (0, rules_1.parseCombo)(cards, view.level, action.declared);
+    return !!combo && (0, rules_1.beats)(combo, view.lastPlay?.combo ?? null);
+}
+function publicAiView(o) {
+    return {
+        seat: o.seat, turn: o.turn, level: o.level,
+        hand: o.hand.map(c => ({ id: c.id, suit: c.suit, rank: c.rank, deck: c.deck })),
+        lastPlay: o.lastPlay ? {
+            seat: o.lastPlay.seat, cardIds: [...o.lastPlay.cardIds],
+            combo: { ...o.lastPlay.combo, cards: o.lastPlay.combo.cards.map(c => ({ ...c })), wildIds: [...o.lastPlay.combo.wildIds] },
+        } : null,
+        counts: [...o.counts],
+        events: o.events.filter(e => e.type !== 'deal').map(e => ({ id: e.id, type: e.type, at: e.at, seat: e.seat, cardIds: e.cardIds ? [...e.cardIds] : undefined, note: e.type === 'trick' ? e.note : undefined })),
+    };
+}
+/** Bounded representative candidates; explicit wildcard interpretations carry their own declaration. */
+function buildAiRequest(o, intent, requestId, maxActions = 256) {
+    if (o.turn !== o.seat || !Number.isInteger(maxActions) || maxActions < 1 || maxActions > 512)
+        throw new Error('AI 请求参数无效');
+    const view = publicAiView(o);
+    const byId = new Map(view.hand.map(card => [card.id, card]));
+    const actions = [], seen = new Set();
+    const add = (a) => { const key = actionKey(a); if (actions.length < maxActions && !seen.has(key) && validAiAction(view, a)) {
+        seen.add(key);
+        actions.push(a);
+    } };
+    const preferred = (0, strong_ai_1.chooseStructuredMove)(o);
+    if (preferred)
+        add({ cards: preferred });
+    if (o.lastPlay)
+        add({ cards: null });
+    for (const ids of (0, ai_1.legalMoves)(o, 'analysis')) {
+        if (actions.length >= maxActions)
+            break;
+        const cards = ids.map(id => byId.get(id));
+        for (const combo of (0, rules_1.comboOptions)(cards, view.level)) {
+            if (!(0, rules_1.beats)(combo, view.lastPlay?.combo ?? null))
+                continue;
+            const defaultCombo = (0, rules_1.parseCombo)(cards, view.level);
+            const sameAsDefault = defaultCombo?.kind === combo.kind && defaultCombo.mainRank === combo.mainRank && defaultCombo.secondaryRank === combo.secondaryRank;
+            add({ cards: ids, ...(sameAsDefault ? {} : { declared: { kind: combo.kind, mainRank: combo.mainRank, secondaryRank: combo.secondaryRank } }) });
+        }
+    }
+    if (!actions.length)
+        throw new Error('未能生成合法 AI 动作');
+    return { version: 1, requestId, intent, view, actions };
+}
+function verifyAiReply(request, reply) {
+    if (!reply || reply.version !== 1 || reply.requestId !== request.requestId || typeof reply.provider !== 'string')
+        throw new Error('AI 响应版本或请求编号无效');
+    if (!validAiAction(request.view, reply.action) || !request.actions.some(action => actionKey(action) === actionKey(reply.action)))
+        throw new Error('AI 返回了候选集以外或非法的动作');
+    return reply.action;
+}
+exports.localAiProvider = {
+    id: 'structured-v0.11',
+    async decide(request) {
+        const o = { ...request.view, role: ['you', 'boss', 'partner', 'opponent'][request.view.seat], persona: ['learner', 'control', 'partnerFirst', 'tempo'][request.view.seat] };
+        const preferred = (0, strong_ai_1.chooseStructuredMove)(o);
+        const target = preferred ? actionKey({ cards: preferred }) : 'pass';
+        const action = request.actions.find(option => actionKey(option) === target)
+            ?? (request.view.lastPlay ? request.actions.find(option => option.cards === null) : undefined)
+            ?? request.actions.find(option => option.cards !== null);
+        if (!action)
+            throw new Error('没有可执行的 AI 动作');
+        return { version: 1, requestId: request.requestId, provider: this.id, action };
+    },
+};
+/** Optional loopback provider. Never sends GameState, seed, other seats' hands, or saved games. */
+function loopbackAiProvider(endpoint = 'http://127.0.0.1:17364/v1/decide') {
+    if (endpoint !== 'http://127.0.0.1:17364/v1/decide')
+        throw new Error('只允许预设的本机 AI 地址');
+    return {
+        id: 'loopback-v1',
+        timeoutMs: 10000,
+        async decide(request, signal) {
+            const response = await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request), signal });
+            if (!response.ok)
+                throw new Error(`本机 AI 服务不可用（${response.status}）`);
+            return await response.json();
+        },
+    };
+}
+/** Timeout, invalid reply, and backend failure all fail closed to the offline strategy. */
+async function decideSafely(request, provider, timeoutMs = provider.timeoutMs ?? 1200) {
+    const controller = new AbortController();
+    let timer;
+    try {
+        const reply = await Promise.race([
+            provider.decide(request, controller.signal),
+            new Promise((_, reject) => { timer = setTimeout(() => { controller.abort(); reject(new Error('AI 决策超时')); }, timeoutMs); }),
+        ]);
+        return { action: verifyAiReply(request, reply), source: reply.provider, fallback: false };
+    }
+    catch {
+        const fallback = await exports.localAiProvider.decide(request);
+        return { action: verifyAiReply(request, fallback), source: exports.localAiProvider.id, fallback: true };
+    }
+    finally {
+        if (timer !== undefined)
+            clearTimeout(timer);
+    }
+}
+/** Revalidate at commit time against the authoritative engine; no provider can mutate state. */
+function aiActionToGame(action, state) {
+    const seat = state.turn;
+    if (action.cards === null)
+        return { seat, kind: 'pass' };
+    return { seat, kind: 'play', cards: action.cards, ...(action.declared ? { declared: action.declared } : {}) };
+}
+
+},
+"offline/arena-status": function(require, module, exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.arenaStatus = arenaStatus;
+/** Presentation-only projection; the engine is the sole authority for turn and handoff. */
+function arenaStatus(state) {
+    if (state.phase === 'finished')
+        return { phase: 'finished', owner: state.lastPlay?.seat ?? state.leader, next: state.turn, responses: 0, required: 0, handoff: false, label: '本局结束' };
+    if (!state.lastPlay) {
+        const event = [...state.events].reverse().find(e => e.type === 'trick');
+        const handoff = !!event?.note?.includes('接风');
+        return { phase: 'lead', owner: state.leader, next: state.turn, responses: 0, required: 0, handoff,
+            label: handoff ? '搭档接风 · 自由领出' : '新一圈 · 自由领出' };
+    }
+    const owner = state.lastPlay.seat;
+    const required = state.players.filter(p => !p.finished && p.seat !== owner).length;
+    return { phase: 'reply', owner, next: state.turn, responses: state.passes, required,
+        handoff: !!state.players[owner].finished,
+        label: state.players[owner].finished ? '最后一手待三家响应 · 不能提前接风' : '等待其余玩家响应' };
+}
+
+},
+"offline/strong-ai": function(require, module, exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.chooseStructuredMove = chooseStructuredMove;
+exports.chooseCardCountingMove = chooseCardCountingMove;
+exports.chooseLegacyStructuredMove = chooseLegacyStructuredMove;
+exports.chooseExpandedStructuredMove = chooseExpandedStructuredMove;
+const ai_1 = require("../lib/game/ai");
+const cards_1 = require("../lib/game/cards");
+const rules_1 = require("../lib/game/rules");
+const card_memory_1 = require("./card-memory");
+/** Shipped policy: prefer retaining pairs and larger groups over shedding a few cards. */
+function chooseStructuredMove(o) {
+    return chooseFromMoves(o, (0, ai_1.legacyLegalMoves)(o), 4, 6);
+}
+/** Experimental memory-aware challenger. The shipped/frozen structural policy stays unchanged until an independent paired duel proves an upgrade. */
+function chooseCardCountingMove(o) {
+    return chooseFromMoves(o, (0, ai_1.legacyLegalMoves)(o), 4, 6, (0, card_memory_1.countOutsideCards)(o));
+}
+/** Frozen v0.10 policy for direct paired regressions. */
+function chooseLegacyStructuredMove(o) {
+    return chooseFromMoves(o, (0, ai_1.legacyLegalMoves)(o), 1.8, 2.7);
+}
+/** Expanded candidates with unchanged v0.10 scoring, for comparison only. */
+function chooseExpandedStructuredMove(o) {
+    return chooseFromMoves(o, (0, ai_1.legalMoves)(o), 1.8, 2.7);
+}
+function chooseFromMoves(o, moves, singleWeight, breakWeight, memory) {
+    if (!moves.length)
+        return o.lastPlay ? null : (0, ai_1.chooseAiMove)(o);
+    const teammate = (o.seat + 2) % 4;
+    const opponentMin = Math.min(...o.counts.filter((_, seat) => seat % 2 !== o.seat % 2));
+    const allyLeads = o.lastPlay?.seat === teammate;
+    const holding = o.hand.length;
+    if (allyLeads && o.counts[teammate] <= 6 && !moves.some(ids => ids.length === holding))
+        return null;
+    const byId = new Map(o.hand.map(card => [card.id, card]));
+    const counts = new Map();
+    for (const card of o.hand)
+        counts.set(card.rank, (counts.get(card.rank) ?? 0) + 1);
+    const hasNormal = moves.some(ids => {
+        const combo = (0, rules_1.parseCombo)(ids.map(id => byId.get(id)), o.level);
+        return !['bomb', 'straightFlush', 'jokerBomb'].includes(combo.kind);
+    });
+    const score = (ids) => {
+        const cards = ids.map(id => byId.get(id));
+        const combo = (0, rules_1.parseCombo)(cards, o.level);
+        const rest = new Map(counts);
+        for (const card of cards)
+            rest.set(card.rank, rest.get(card.rank) - 1);
+        const wildSpent = cards.filter(card => card.suit === 'H' && card.rank === o.level).length;
+        const powerSpent = cards.reduce((sum, card) => sum + Math.max(0, (0, cards_1.rankPower)(card.rank, o.level) - 10), 0);
+        let broken = 0, singles = 0;
+        for (const [rank, left] of rest) {
+            if (left === 1 && rank !== o.level && rank <= 14)
+                singles++;
+            if (left === 1 && (counts.get(rank) ?? 0) >= 2)
+                broken++;
+        }
+        const bomb = ['bomb', 'straightFlush', 'jokerBomb'].includes(combo.kind);
+        const finish = ids.length === holding;
+        // A public-pool upper bound: no higher natural group does not rule out bombs,
+        // wild interpretations or teammate ownership. Only a small situational tie-breaker.
+        let memoryBonus = 0;
+        if (memory && !allyLeads && wildSpent === 0 && ['single', 'pair', 'triple'].includes(combo.kind)) {
+            const possible = combo.kind === 'single'
+                ? (0, card_memory_1.possibleHigherSingles)(memory, cards[0].rank, o.level)
+                : (0, card_memory_1.possibleHigherNaturalGroups)(memory, cards[0].rank, cards.length, o.level);
+            if (possible === 0)
+                memoryBonus = opponentMin <= 3 ? -12 : -2;
+            else if (possible <= 2 && opponentMin <= 3)
+                memoryBonus = -4;
+        }
+        // Smaller is better. Frozen policies do not pass memory, so their scores are unchanged.
+        return -(cards.length * 4.5) + singles * singleWeight + broken * breakWeight
+            + wildSpent * (holding > 8 ? 6 : 1)
+            + powerSpent * (holding > 8 ? 0.6 : 0.15)
+            + (bomb && hasNormal && !finish && opponentMin > 2 ? 25 : 0)
+            + (bomb && allyLeads ? 25 : 0)
+            + (allyLeads ? 13 : 0)
+            - (finish ? 1000 : 0)
+            - (opponentMin <= 3 && !allyLeads ? cards.length * 1.5 : 0)
+            + combo.mainRank * 0.04 + memoryBonus;
+    };
+    let best = null;
+    let bestScore = Infinity;
+    for (const ids of moves) {
+        const value = score(ids);
+        if (value < bestScore) {
+            bestScore = value;
+            best = ids;
+        }
+    }
+    // Do not overtake a teammate unless a legal move immediately empties our hand.
+    if (o.lastPlay && allyLeads)
+        return moves.find(ids => ids.length === holding) ?? null;
+    return best;
+}
+
+},
+"offline/search-ai": function(require, module, exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.searchAiProvider = exports.defaultSearchOptions = void 0;
+exports.sampleSearchState = sampleSearchState;
+exports.decideSearch = decideSearch;
+exports.decideSearchWithBaseline = decideSearchWithBaseline;
+const ai_1 = require("../lib/game/ai");
+const cards_1 = require("../lib/game/cards");
+const engine_1 = require("../lib/game/engine");
+const rules_1 = require("../lib/game/rules");
+const ai_gateway_1 = require("./ai-gateway");
+const card_memory_1 = require("./card-memory");
+const strong_ai_1 = require("./strong-ai");
+exports.defaultSearchOptions = { samples: 12, maxCandidates: 4, maxTotalCards: 48, maxHand: 12, seed: 917539, minGain: 0.05 };
+/** Reconstruct only public state. A pass records a choice, not proof that a seat lacks a counter. */
+function sampleSearchState(o, seed) {
+    const memory = (0, card_memory_1.countOutsideCards)(o);
+    if (o.turn !== o.seat || !o.hand.length || !Number.isSafeInteger(seed))
+        throw new Error('采样回合无效');
+    const outside = (0, cards_1.shuffle)(memory.outside, seed);
+    const finishOrder = o.events.filter(e => e.type === 'finish').map(e => e.seat);
+    if (finishOrder.some(s => s === undefined) || new Set(finishOrder).size !== finishOrder.length ||
+        o.counts.some((n, s) => (n === 0) !== finishOrder.includes(s)))
+        throw new Error('公开出完记录不一致');
+    let passes = 0;
+    if (o.lastPlay)
+        for (let i = o.events.length - 1; i >= 0; i--) {
+            const event = o.events[i];
+            if (event.type === 'play' || event.type === 'trick')
+                break;
+            if (event.type === 'pass')
+                passes++;
+        }
+    let offset = 0;
+    const players = [0, 1, 2, 3].map(seat => ({ seat, name: String(seat),
+        role: ['you', 'boss', 'partner', 'opponent'][seat],
+        hand: seat === o.seat ? o.hand.map(c => ({ ...c })) : outside.slice(offset, offset += o.counts[seat]),
+        finished: finishOrder.includes(seat) ? finishOrder.indexOf(seat) + 1 : undefined }));
+    return { schemaVersion: 2, ruleVersion: '竞技掼蛋2022-教学版', seed: 0, createdAt: 0, level: o.level, levelOwner: null,
+        phase: 'playing', players, turn: o.turn, leader: o.lastPlay?.seat ?? o.turn,
+        lastPlay: o.lastPlay ? { ...o.lastPlay, cardIds: [...o.lastPlay.cardIds], combo: { ...o.lastPlay.combo,
+                cards: o.lastPlay.combo.cards.map(c => ({ ...c })), wildIds: [...o.lastPlay.combo.wildIds] } } : null,
+        passes, finishOrder, events: o.events.map(e => ({ ...e, cardIds: e.cardIds ? [...e.cardIds] : undefined })),
+        trickNo: 0, roundNo: 1, teamLevels: [o.level, o.level], matchWinner: null };
+}
+/** Scores only shortlist quality, never interprets the outside pool as known owners. */
+function shortlist(o, baseline, maximum, candidateBudget = 512, proposals = []) {
+    const request = (0, ai_gateway_1.buildAiRequest)(o, 'play', 'sampling-search', candidateBudget), byId = new Map(o.hand.map(c => [c.id, c]));
+    const before = new Map(o.hand.map(c => [c.rank, o.hand.filter(x => x.rank === c.rank).length]));
+    const score = (a) => {
+        if (!a.cards)
+            return 0;
+        const ids = new Set(a.cards), cards = a.cards.map(id => byId.get(id));
+        const remaining = o.hand.filter(c => !ids.has(c.id)), counts = new Map();
+        for (const c of remaining)
+            counts.set(c.rank, (counts.get(c.rank) ?? 0) + 1);
+        let singles = 0, broken = 0;
+        for (const [rank, n] of counts) {
+            if (n === 1 && rank <= 14 && rank !== o.level)
+                singles++;
+            if (n === 1 && before.get(rank) >= 2)
+                broken++;
+        }
+        const combo = (0, rules_1.parseCombo)(cards, o.level, a.declared);
+        const bomb = ['bomb', 'straightFlush', 'jokerBomb'].includes(combo.kind);
+        return -4.5 * cards.length + 4 * singles + 6 * broken +
+            cards.filter(c => c.suit === 'H' && c.rank === o.level).length * (o.hand.length > 8 ? 6 : 1) +
+            cards.reduce((s, c) => s + Math.max(0, (0, cards_1.rankPower)(c.rank, o.level) - 10), 0) * (o.hand.length > 8 ? 0.6 : 0.15) +
+            (bomb && cards.length !== o.hand.length ? 15 : 0) - Number(cards.length === o.hand.length) * 1000 + combo.mainRank * 0.04;
+    };
+    // Duplicate copies with the same printed suit/rank and declaration have equivalent continuations.
+    const signature = (a) => a.cards === null ? 'pass' : a.cards.map(id => { const c = byId.get(id); return c.suit + '-' + c.rank; }).sort().join('|') + '#' + JSON.stringify(a.declared ?? null);
+    const result = [baseline], seen = new Set([signature(baseline)]);
+    const ordered = request.actions.filter(a => a.cards !== null).sort((a, b) => score(a) - score(b) || (0, ai_gateway_1.actionKey)(a).localeCompare((0, ai_gateway_1.actionKey)(b), 'en'));
+    const add = (a) => { const key = signature(a); if (!seen.has(key) && result.length < maximum) {
+        seen.add(key);
+        result.push(a);
+    } };
+    // Preserve the option to wait rather than spend control cards on an opponent.
+    if (o.lastPlay)
+        add({ cards: null });
+    add({ cards: (0, strong_ai_1.chooseStructuredMove)(o) });
+    const offered = new Set(request.actions.map(ai_gateway_1.actionKey));
+    for (const a of proposals)
+        if (offered.has((0, ai_gateway_1.actionKey)(a)))
+            add(a);
+    for (const a of ordered)
+        add(a);
+    return result;
+}
+function continueToHead(sample, action, seat, objective = 'head') {
+    let state = action.cards === null ? (0, engine_1.passTurn)(sample, seat) : (0, engine_1.playCards)(sample, seat, action.cards, action.declared);
+    for (let step = 0; (objective === 'match' || state.finishOrder.length === 0) && state.phase === 'playing' && step < (objective === 'head' ? 240 : 350); step++) {
+        const active = state.turn, o = (0, ai_1.observe)(state, active), ids = (0, strong_ai_1.chooseStructuredMove)(o);
+        if (ids)
+            state = (0, engine_1.playCards)(state, active, ids);
+        else if (state.lastPlay)
+            state = (0, engine_1.passTurn)(state, active);
+        else {
+            const fallback = (0, ai_1.legalMoves)(o)[0];
+            if (!fallback)
+                return null;
+            state = (0, engine_1.playCards)(state, active, fallback);
+        }
+    }
+    if (!state.finishOrder.length || (objective === 'match' && state.phase !== 'finished'))
+        return null;
+    const won = state.finishOrder[0] % 2 === seat % 2;
+    return objective === 'head' ? Number(won) : Number(won) + 0.5 * (won ? 1 : -1) * (0, engine_1.upgradeSteps)(state.finishOrder) / 3;
+}
+function visibleSalt(o) {
+    let salt = 2166136261;
+    const value = o.hand.map(c => c.id).sort().join('|') + '#' + o.events.filter(e => e.type === 'play' || e.type === 'pass').map(e => e.type + e.seat + (e.cardIds ?? []).join(',')).join('|');
+    for (let i = 0; i < value.length; i++) {
+        salt ^= value.charCodeAt(i);
+        salt = Math.imul(salt, 16777619);
+    }
+    return salt >>> 0;
+}
+/** Fixed common random samples; conservative paired improvement required to override the frozen policy. */
+function decideSearch(o, overrides = {}) {
+    return decideSearchWithBaseline(o, { cards: (0, strong_ai_1.chooseStructuredMove)(o) }, overrides);
+}
+/** Experimental neural-policy critic. Full-match utility includes upgrade without known hidden owners. */
+function decideSearchWithBaseline(o, baseline, overrides = {}, objective = 'head', candidateBudget = 512, proposals = []) {
+    const config = { ...exports.defaultSearchOptions, ...overrides };
+    if (!Number.isInteger(config.samples) || config.samples < 2 || config.samples > 128 || !Number.isInteger(config.maxCandidates) || config.maxCandidates < 2 || config.maxCandidates > 8 ||
+        !Number.isInteger(config.maxTotalCards) || config.maxTotalCards < 1 || config.maxTotalCards > 108 || !Number.isInteger(config.maxHand) || config.maxHand < 1 || config.maxHand > 27 ||
+        !Number.isSafeInteger(config.seed) || !Number.isFinite(config.minGain) || config.minGain < 0 || config.minGain > 1)
+        throw new Error('搜索预算无效');
+    if (!['head', 'match'].includes(objective) || ![256, 512].includes(candidateBudget) || !(0, ai_gateway_1.validAiAction)(o, baseline))
+        throw new Error('搜索基准动作无效');
+    if (!Array.isArray(proposals) || proposals.length > 8 || proposals.some(a => !(0, ai_gateway_1.validAiAction)(o, a)))
+        throw new Error('搜索建议动作无效');
+    const fallback = { action: baseline, baseline, searched: false, changed: false, candidates: [baseline], outcomes: [], gain: 0, sampleCount: 0 };
+    if (o.hand.length > config.maxHand || o.counts.reduce((s, n) => s + n, 0) > config.maxTotalCards || o.counts.some(n => n === 0) ||
+        baseline.cards?.length === o.hand.length || o.lastPlay?.seat === (o.seat + 2) % 4)
+        return fallback;
+    const options = shortlist(o, baseline, config.maxCandidates, candidateBudget, proposals);
+    if (options.length < 2)
+        return fallback;
+    const outcomes = options.map(() => []), salt = visibleSalt(o);
+    for (let i = 0; i < config.samples; i++) {
+        const sample = sampleSearchState(o, (config.seed + salt + i * 7919) >>> 0);
+        const row = options.map(a => continueToHead(sample, a, o.seat, objective));
+        // Exclude failed samples for all candidates, preserving pairing.
+        if (row.some(x => x === null))
+            continue;
+        row.forEach((x, j) => outcomes[j].push(x));
+    }
+    const n = outcomes[0].length;
+    let selected = 0, bestGain = 0;
+    if (n >= 8)
+        for (let j = 1; j < options.length; j++) {
+            const differences = outcomes[j].map((x, i) => x - outcomes[0][i]);
+            const gain = differences.reduce((s, x) => s + x, 0) / n;
+            const variance = differences.reduce((s, x) => s + (x - gain) ** 2, 0) / (n - 1);
+            // A selection heuristic, not a confidence statement about the actual game's win probability.
+            if (gain > bestGain && gain > config.minGain + 1.28 * Math.sqrt(variance / n)) {
+                selected = j;
+                bestGain = gain;
+            }
+        }
+    return { action: options[selected], baseline, searched: true, changed: selected !== 0, candidates: options, outcomes, gain: bestGain, sampleCount: n };
+}
+/** Rich provider keeps explicit wildcard declarations through the authoritative engine. */
+exports.searchAiProvider = { id: 'visible-sampling-search-v1', async decide(request) {
+        const view = request.view, seat = view.seat;
+        const o = { ...view, role: ['you', 'boss', 'partner', 'opponent'][seat], persona: ['learner', 'control', 'partnerFirst', 'tempo'][seat] };
+        // Search only actions exposed by the same 256-action budget as the live gateway.
+        // Otherwise an expensive 512-action search can select an unavailable action and silently fall back.
+        const selected = decideSearchWithBaseline(o, { cards: (0, strong_ai_1.chooseStructuredMove)(o) }, {}, 'head', 256).action;
+        const action = request.actions.find(a => (0, ai_gateway_1.actionKey)(a) === (0, ai_gateway_1.actionKey)(selected));
+        if (!action)
+            throw new Error('搜索动作不在本次请求的合法候选内');
+        return { version: 1, requestId: request.requestId, provider: this.id, action };
+    } };
+
+},
+"offline/card-memory": function(require, module, exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.countOutsideCards = countOutsideCards;
+exports.possibleHigherSingles = possibleHigherSingles;
+exports.possibleHigherNaturalGroups = possibleHigherNaturalGroups;
+const cards_1 = require("../lib/game/cards");
+const deck = (0, cards_1.createDeck)();
+const byId = new Map(deck.map(card => [card.id, card]));
+const cardKey = (suit, rank) => `${suit}-${rank}`;
+/** Reconstruct the public unseen pool. Never reads GameState, seed or another seat's hand. */
+function countOutsideCards(view) {
+    if (!Number.isInteger(view.seat) || view.seat < 0 || view.seat > 3 || view.counts.length !== 4 ||
+        view.counts.some(count => !Number.isInteger(count) || count < 0 || count > 27) ||
+        view.counts[view.seat] !== view.hand.length)
+        throw new Error('记牌器：座位或手牌张数无效');
+    const hand = new Set();
+    for (const card of view.hand) {
+        const known = byId.get(card.id);
+        if (!known || known.suit !== card.suit || known.rank !== card.rank || known.deck !== card.deck || hand.has(card.id))
+            throw new Error('记牌器：手牌实体牌无效');
+        hand.add(card.id);
+    }
+    const seen = new Set();
+    for (const event of view.events) {
+        if (event.type !== 'play')
+            continue;
+        if (!event.cardIds?.length || event.cardIds.some(id => !byId.has(id) || hand.has(id) || seen.has(id)))
+            throw new Error('记牌器：公开出牌记录冲突');
+        event.cardIds.forEach(id => seen.add(id));
+    }
+    const played = deck.filter(card => seen.has(card.id));
+    const outside = deck.filter(card => !hand.has(card.id) && !seen.has(card.id));
+    const otherHandCounts = view.counts.map((count, seat) => seat === view.seat ? 0 : count);
+    if (outside.length !== otherHandCounts.reduce((a, b) => a + b, 0))
+        throw new Error('记牌器：未见牌数量与各家剩牌不一致');
+    const outsideByRank = new Map(), outsideBySuitRank = new Map();
+    for (const card of outside) {
+        outsideByRank.set(card.rank, (outsideByRank.get(card.rank) ?? 0) + 1);
+        const key = cardKey(card.suit, card.rank);
+        outsideBySuitRank.set(key, (outsideBySuitRank.get(key) ?? 0) + 1);
+    }
+    return { outside, played, outsideByRank, outsideBySuitRank, outsideCount: outside.length, otherHandCounts };
+}
+/** A *potential*, not certainty: a higher natural singleton may all be in the teammate's hand. */
+function possibleHigherSingles(memory, rank, level) {
+    const power = (0, cards_1.rankPower)(rank, level);
+    return memory.outside.reduce((n, card) => n + Number((0, cards_1.rankPower)(card.rank, level) > power), 0);
+}
+/** Purely public possibility. Bombs and wild interpretations are not ruled out by this helper. */
+function possibleHigherNaturalGroups(memory, rank, size, level) {
+    const power = (0, cards_1.rankPower)(rank, level);
+    let options = 0;
+    for (const [otherRank, count] of memory.outsideByRank) {
+        if (count >= size && (0, cards_1.rankPower)(otherRank, level) > power)
+            options++;
+    }
+    return options;
+}
+
+},
+"lib/game/cards": function(require, module, exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SUIT_LABEL = exports.RANK_LABEL = void 0;
+exports.createDeck = createDeck;
+exports.mulberry32 = mulberry32;
+exports.shuffle = shuffle;
+exports.rankPower = rankPower;
+exports.sortCards = sortCards;
+exports.cardLabel = cardLabel;
+exports.RANK_LABEL = { 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9', 10: '10', 11: 'J', 12: 'Q', 13: 'K', 14: 'A', 15: '小王', 16: '大王' };
+exports.SUIT_LABEL = { S: '♠', H: '♥', C: '♣', D: '♦', J: '' };
+function createDeck() {
+    const deck = [];
+    for (let d = 0; d < 2; d++) {
+        for (const suit of ['S', 'H', 'C', 'D'])
+            for (let rank = 2; rank <= 14; rank++)
+                deck.push({ id: `${d}-${suit}-${rank}`, suit, rank: rank, deck: d });
+        deck.push({ id: `${d}-J-15`, suit: 'J', rank: 15, deck: d }, { id: `${d}-J-16`, suit: 'J', rank: 16, deck: d });
+    }
+    return deck;
+}
+function mulberry32(seed) { return () => { let t = seed += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function shuffle(items, seed) { const a = [...items], rnd = mulberry32(seed); for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+} return a; }
+function rankPower(rank, level) { if (rank === 16)
+    return 17; if (rank === 15)
+    return 16; if (rank === level)
+    return 15; return rank; }
+function sortCards(cards, level) { return [...cards].sort((a, b) => rankPower(a.rank, level) - rankPower(b.rank, level) || a.suit.localeCompare(b.suit) || a.deck - b.deck); }
+function cardLabel(card) { return `${exports.SUIT_LABEL[card.suit]}${exports.RANK_LABEL[card.rank]}`; }
+
+},
+"lib/game/types": function(require, module, exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+
+},
+"lib/game/rules": function(require, module, exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.comboOptions = comboOptions;
+exports.parseCombo = parseCombo;
+exports.comboPower = comboPower;
+exports.beats = beats;
+exports.comboName = comboName;
+const cards_1 = require("./cards");
+const sequenceHigh = (counts, n) => { const ks = [...counts.keys()].sort((a, b) => a - b); if (ks.length !== n)
+    return null; if (ks.every((v, i) => i === 0 || v === ks[i - 1] + 1))
+    return ks.at(-1); const aceLow = ks.map(v => v === 14 ? 1 : v).sort((a, b) => a - b); return aceLow.every((v, i) => i === 0 || v === aceLow[i - 1] + 1) ? aceLow.at(-1) : null; };
+const main = (counts, need) => [...counts.entries()].find(([, n]) => n === need)?.[0] ?? 0;
+/** Each wildcard interpretation that changes the declared type or its strength. */
+function comboOptions(cards, level) {
+    if (!cards.length)
+        return [];
+    if (cards.length === 4 && cards.every(c => c.suit === 'J'))
+        return [combo('jokerBomb', cards, 18, [])];
+    if (cards.length === 1)
+        return [combo('single', cards, (0, cards_1.rankPower)(cards[0].rank, level), [])];
+    const wild = cards.filter(c => c.suit === 'H' && c.rank === level);
+    const natural = cards.filter(c => !wild.includes(c));
+    const candidates = [];
+    const needDistinctInterpretations = wild.length > 0 && cards.length === 5;
+    for (const assigned of assignments(natural, wild.length)) {
+        const counts = countRanks(assigned), ranks = [...counts.keys()];
+        const add = (kind, mainRank, secondaryRank) => candidates.push({ ...combo(kind, cards, mainRank, wild.map(c => c.id)), ...(secondaryRank === undefined ? {} : { secondaryRank }) });
+        if (cards.length === 2 && counts.size === 1)
+            add('pair', (0, cards_1.rankPower)(ranks[0], level));
+        if (cards.length === 3 && counts.size === 1)
+            add('triple', (0, cards_1.rankPower)(ranks[0], level));
+        if (cards.length === 5) {
+            if ([...counts.values()].sort().join() === '2,3')
+                add('triplePair', (0, cards_1.rankPower)(main(counts, 3), level), (0, cards_1.rankPower)(main(counts, 2), level));
+            const high = sequenceHigh(counts, 5);
+            if (high && ranks.every(r => r >= 2 && r <= 14)) {
+                const flush = cards.every(c => c.suit !== 'J' && (c.suit === cards.find(x => x.suit !== 'J' && !(x.suit === 'H' && x.rank === level))?.suit || c.suit === 'H' && c.rank === level));
+                add(flush ? 'straightFlush' : 'straight', high);
+            }
+        }
+        if (cards.length === 6 && ranks.every(r => r <= 14) && counts.size === 3 && [...counts.values()].every(n => n === 2) && sequenceHigh(counts, 3))
+            add('tube', sequenceHigh(counts, 3));
+        if (cards.length === 6 && ranks.every(r => r <= 14) && counts.size === 2 && [...counts.values()].every(n => n === 3) && sequenceHigh(counts, 2))
+            add('plate', sequenceHigh(counts, 2));
+        if (cards.length >= 4 && cards.length <= 10 && counts.size === 1)
+            add('bomb', (0, cards_1.rankPower)(ranks[0], level));
+    }
+    if (!needDistinctInterpretations)
+        return candidates.sort((a, b) => comboPower(b) - comboPower(a) || b.mainRank - a.mainRank);
+    const unique = new Map();
+    for (const candidate of candidates)
+        unique.set(`${candidate.kind}|${candidate.mainRank}|${candidate.secondaryRank ?? ''}`, candidate);
+    return [...unique.values()].sort((a, b) => comboPower(b) - comboPower(a) || b.mainRank - a.mainRank);
+}
+/** The old, deterministic default is kept for AI and existing saved games. */
+function parseCombo(cards, level, declared) {
+    const options = comboOptions(cards, level);
+    if (!declared)
+        return options[0] ?? null;
+    return options.find(option => option.kind === declared.kind && option.mainRank === declared.mainRank && option.secondaryRank === declared.secondaryRank) ?? null;
+}
+function assignments(natural, wildCount) {
+    if (!wildCount)
+        return [natural];
+    const out = [];
+    const recur = (arr, n) => { if (!n) {
+        out.push(arr);
+        return;
+    } for (let rank = 2; rank <= 14; rank++)
+        recur([...arr, { id: `wild-${n}-${rank}`, suit: 'H', rank: rank, deck: 0 }], n - 1); };
+    recur(natural, wildCount);
+    return out;
+}
+function countRanks(cards) { const m = new Map(); for (const c of cards)
+    m.set(c.rank, (m.get(c.rank) || 0) + 1); return m; }
+function combo(kind, cards, mainRank, wildIds) { return { kind, size: cards.length, mainRank, cards, wildIds }; }
+function comboPower(c) { if (c.kind === 'jokerBomb')
+    return 1000; if (c.kind === 'bomb')
+    return 680 + c.size * 20; if (c.kind === 'straightFlush')
+    return 790; return 100; }
+function beats(next, previous) { if (!previous)
+    return true; const a = comboPower(next), b = comboPower(previous); if (a !== b)
+    return a > b; if (next.kind !== previous.kind || next.size !== previous.size)
+    return false; return next.mainRank > previous.mainRank; }
+function comboName(c) { return ({ single: '单张', pair: '对子', triple: '三张', triplePair: '三带二', straight: '顺子', tube: '三连对（木板）', plate: '二连三（钢板）', bomb: `${c.size}张炸弹`, straightFlush: '同花顺', jokerBomb: '四王炸' })[c.kind]; }
+
+},
+"lib/game/engine": function(require, module, exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.tributeReturnCard = tributeReturnCard;
+exports.newGame = newGame;
+exports.legalPlay = legalPlay;
+exports.playCards = playCards;
+exports.passTurn = passTurn;
+exports.resultLabel = resultLabel;
+exports.resultSummary = resultSummary;
+exports.upgradeSteps = upgradeSteps;
+exports.advanceLevel = advanceLevel;
+exports.nextRound = nextRound;
+const cards_1 = require("./cards");
+const rules_1 = require("./rules");
+const nextSeat = (state, from) => { for (let i = 1; i <= 4; i++) {
+    const s = ((from + i) % 4);
+    if (!state.players[s].finished)
+        return s;
+} return from; };
+const event = (state, type, seat, cardIds, note) => ({ id: `e${state.events.length + 1}`, type, seat, cardIds, at: state.events.length, note });
+/** Return tribute is restricted by printed rank (2..10), not trump-adjusted rankPower. */
+function tributeReturnCard(hand, level, receivedId) {
+    const available = hand.filter(c => c.id !== receivedId);
+    const allowed = available.filter(c => c.rank <= 10);
+    const ordered = [...(allowed.length ? allowed : available)].sort((a, b) => a.rank - b.rank || (0, cards_1.rankPower)(a.rank, level) - (0, cards_1.rankPower)(b.rank, level) || a.deck - b.deck);
+    if (!ordered.length)
+        throw new Error('无牌可还贡');
+    return ordered[0];
+}
+function newGame(seed = Date.now(), level = 2) {
+    const deck = (0, cards_1.shuffle)((0, cards_1.createDeck)(), seed), names = ['你', '王总', '小顾', '林姐'], roles = ['you', 'boss', 'partner', 'opponent'];
+    const players = names.map((name, seat) => ({ seat: seat, name, role: roles[seat], hand: (0, cards_1.sortCards)(deck.slice(seat * 27, seat * 27 + 27), level) }));
+    const first = (Math.abs(seed) % 4);
+    return { schemaVersion: 2, ruleVersion: '竞技掼蛋2022-教学版', seed, createdAt: Date.now(), level, levelOwner: null, phase: 'playing', players, turn: first, leader: first, lastPlay: null, passes: 0, finishOrder: [], events: [{ id: 'e1', type: 'deal', at: 0, note: `本副牌序已生成 · ${names[first]}首出` }], trickNo: 1, roundNo: 1, teamLevels: [level, level], matchWinner: null };
+}
+function legalPlay(state, seat, cardIds, declared) {
+    if (state.phase !== 'playing')
+        return { ok: false, reason: '本副牌已经结束' };
+    if (state.turn !== seat)
+        return { ok: false, reason: '还没轮到你' };
+    if (!cardIds.length)
+        return { ok: false, reason: '请先选择要出的牌' };
+    const hand = state.players[seat].hand, cards = cardIds.map(id => hand.find(c => c.id === id)).filter(Boolean);
+    if (cards.length !== cardIds.length || new Set(cardIds).size !== cardIds.length)
+        return { ok: false, reason: '选牌与手牌不一致' };
+    const parsed = (0, rules_1.parseCombo)(cards, state.level, declared);
+    if (!parsed)
+        return { ok: false, reason: declared ? '所声明的牌型或点数与所选实体牌不符' : '这些牌不能组成合法牌型' };
+    if (!(0, rules_1.beats)(parsed, state.lastPlay?.combo ?? null))
+        return { ok: false, reason: '牌型或点数压不过上一手' };
+    return { ok: true };
+}
+function playCards(state, seat, cardIds, declared) {
+    const valid = legalPlay(state, seat, cardIds, declared);
+    if (!valid.ok)
+        throw new Error(valid.reason);
+    const players = state.players.map(p => ({ ...p, hand: [...p.hand] })), cards = cardIds.map(id => players[seat].hand.find(c => c.id === id)), parsed = (0, rules_1.parseCombo)(cards, state.level, declared);
+    players[seat].hand = players[seat].hand.filter(c => !cardIds.includes(c.id));
+    const finishOrder = [...state.finishOrder];
+    if (!players[seat].hand.length && !finishOrder.includes(seat)) {
+        finishOrder.push(seat);
+        players[seat].finished = finishOrder.length;
+    }
+    const doubleUp = finishOrder.length === 2 && finishOrder[0] % 2 === finishOrder[1] % 2, finished = doubleUp || finishOrder.length >= 3;
+    if (finished) {
+        for (const last of players.filter(p => !finishOrder.includes(p.seat))) {
+            finishOrder.push(last.seat);
+            last.finished = finishOrder.length;
+        }
+    }
+    const winnerTeam = (finishOrder[0] % 2), partner = ((finishOrder[0] + 2) % 4), partnerPlace = finishOrder.indexOf(partner);
+    const matchWinner = finished && state.level === 14 && state.levelOwner === winnerTeam && partnerPlace >= 0 && partnerPlace < 3 ? winnerTeam : null;
+    const out = { ...state, players, finishOrder, lastPlay: { seat, cardIds, combo: parsed }, passes: 0, turn: finished ? seat : nextSeat({ ...state, players }, seat), phase: finished ? 'finished' : 'playing', events: [...state.events, event(state, 'play', seat, cardIds, parsed.wildIds.length ? `逢人配声明：${(0, rules_1.comboName)(parsed)}，主点 ${parsed.mainRank}${parsed.secondaryRank === undefined ? '' : `，带对 ${parsed.secondaryRank}`}` : undefined)], matchWinner };
+    if (players[seat].finished)
+        out.events.push(event(out, 'finish', seat, undefined, `第${players[seat].finished}名`));
+    if (finished) {
+        for (const autoSeat of finishOrder.filter(s => s !== seat && state.players[s].finished === undefined))
+            out.events.push(event(out, 'finish', autoSeat, undefined, `第${players[autoSeat].finished}名（自然结束）`));
+    }
+    return out;
+}
+function passTurn(state, seat) {
+    if (state.phase !== 'playing')
+        throw new Error('本副牌已经结束');
+    if (state.players[seat].finished)
+        throw new Error('已出完的玩家不能行动');
+    if (state.turn !== seat)
+        throw new Error('还没轮到你');
+    if (!state.lastPlay)
+        throw new Error('你是领出，不能过牌');
+    // After the most recent play, every other still-active seat gets one response.
+    // In particular, when that play emptied the winner's hand, ALL three remaining
+    // seats must pass before the partner may borrow the lead.
+    const winner = state.lastPlay.seat;
+    const winnerFinished = !!state.players[winner].finished;
+    const needed = state.players.filter(p => !p.finished && p.seat !== winner).length;
+    const passes = state.passes + 1;
+    if (passes >= needed) {
+        const leader = winnerFinished ? ((winner + 2) % 4) : winner;
+        if (state.players[leader].finished)
+            throw new Error('接风者已经出完，牌局状态不一致');
+        const passEvent = event(state, 'pass', seat);
+        const base = { ...state, events: [...state.events, passEvent] };
+        const note = winnerFinished ? '出完者无人再压，搭档接风' : '无人再压，最大方新一圈领出';
+        return { ...base, turn: leader, leader, lastPlay: null, passes: 0, trickNo: state.trickNo + 1, events: [...base.events, event(base, 'trick', leader, undefined, note)] };
+    }
+    return { ...state, turn: nextSeat(state, seat), passes, events: [...state.events, event(state, 'pass', seat)] };
+}
+function resultLabel(state) { if (state.phase !== 'finished')
+    return ''; if (state.matchWinner != null)
+    return `${state.matchWinner === 0 ? '你方' : '对方'}过 A · 赢得比赛`; const [first, second] = state.finishOrder; return first % 2 === second % 2 ? '双上 · 升 3 级' : state.finishOrder[2] % 2 === first % 2 ? '头游三游 · 升 2 级' : '头游末游 · 升 1 级'; }
+function resultSummary(state) {
+    if (state.phase !== 'finished' || state.finishOrder.length < 4)
+        return '';
+    const winnerTeam = (state.finishOrder[0] % 2), team = winnerTeam === 0 ? '你 / 小顾队' : '王总 / 林姐队';
+    if (state.matchWinner !== null)
+        return `${team} · 过 A · ${winnerTeam === 0 ? '你方赢得比赛' : '你方本场告负'}`;
+    const pattern = state.finishOrder[1] % 2 === winnerTeam ? '双上' : state.finishOrder[2] % 2 === winnerTeam ? '头游三游' : '头游末游', steps = upgradeSteps(state.finishOrder);
+    return `${team} · ${pattern} · 升 ${steps} 级 · ${winnerTeam === 0 ? '你方升级' : '你方本副未升级'}`;
+}
+function upgradeSteps(order) { if (order.length < 4)
+    return 0; return order[0] % 2 === order[1] % 2 ? 3 : order[0] % 2 === order[2] % 2 ? 2 : 1; }
+function advanceLevel(level, steps) { return Math.min(14, level + steps); }
+/** Starts the next deal and resolves the common single/double tribute automatically for training. */
+function nextRound(previous, seed = Date.now()) {
+    if (previous.phase !== 'finished')
+        throw new Error('本副尚未结束');
+    if (previous.matchWinner !== null)
+        throw new Error('比赛已经结束');
+    const winnerTeam = (previous.finishOrder[0] % 2), levels = [...previous.teamLevels];
+    levels[winnerTeam] = advanceLevel(levels[winnerTeam], upgradeSteps(previous.finishOrder));
+    const state = newGame(seed, levels[winnerTeam]);
+    state.roundNo = previous.roundNo + 1;
+    state.teamLevels = levels;
+    state.levelOwner = winnerTeam;
+    const first = previous.finishOrder[0], last = previous.finishOrder[3], doubleDown = previous.finishOrder[0] % 2 === previous.finishOrder[1] % 2;
+    let transfers = doubleDown ? [[previous.finishOrder[3], previous.finishOrder[0]], [previous.finishOrder[2], previous.finishOrder[1]]] : [[last, first]];
+    const anti = doubleDown ? transfers.flatMap(([from]) => state.players[from].hand.filter(c => c.rank === 16)).length === 2 : state.players[last].hand.filter(c => c.rank === 16).length === 2;
+    if (anti) {
+        state.events.push(event(state, 'round', undefined, undefined, '两张大王抗贡'));
+        state.turn = first;
+        state.leader = first;
+        state.events[0].note = `抗贡 · ${state.players[first].name}首出`;
+        return state;
+    }
+    const tributeFor = (from) => [...state.players[from].hand].filter(c => !(c.suit === 'H' && c.rank === state.level)).sort((a, b) => (0, cards_1.rankPower)(b.rank, state.level) - (0, cards_1.rankPower)(a.rank, state.level) || b.rank - a.rank)[0];
+    if (doubleDown) {
+        const ranked = transfers.map(([from]) => ({ from, card: tributeFor(from) })).sort((a, b) => (0, cards_1.rankPower)(b.card.rank, state.level) - (0, cards_1.rankPower)(a.card.rank, state.level));
+        transfers = [[ranked[0].from, previous.finishOrder[0]], [ranked[1].from, previous.finishOrder[1]]];
+    }
+    const firstOut = transfers[0][0];
+    for (const [from, to] of transfers) {
+        const giver = state.players[from], receiver = state.players[to];
+        const tribute = tributeFor(from);
+        giver.hand = giver.hand.filter(c => c.id !== tribute.id);
+        receiver.hand.push(tribute);
+        const returned = tributeReturnCard(receiver.hand, state.level, tribute.id);
+        receiver.hand = receiver.hand.filter(c => c.id !== returned.id);
+        giver.hand.push(returned);
+        giver.hand = (0, cards_1.sortCards)(giver.hand, state.level);
+        receiver.hand = (0, cards_1.sortCards)(receiver.hand, state.level);
+        state.events.push(event(state, 'round', from, [tribute.id, returned.id], `向${to}号位进贡并还贡`));
+    }
+    state.turn = firstOut;
+    state.leader = firstOut;
+    state.events[0].note = `贡还牌后 · ${state.players[firstOut].name}首出`;
+    return state;
+}
+
+},
+"lib/game/ai": function(require, module, exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.compatibleRemoteAgent = exports.localTrainingAgent = exports.AGENT_PERSONAS = void 0;
+exports.agentPersona = agentPersona;
+exports.remotePersonaInstruction = remotePersonaInstruction;
+exports.observe = observe;
+exports.legacyLegalMoves = legacyLegalMoves;
+exports.legalMoves = legalMoves;
+exports.chooseAiMove = chooseAiMove;
+exports.explainAgentMove = explainAgentMove;
+exports.safeAgentMove = safeAgentMove;
+exports.safeAgentDecision = safeAgentDecision;
+const rules_1 = require("./rules");
+exports.AGENT_PERSONAS = {
+    0: {
+        id: "learner",
+        label: "训练建议",
+        description: "优先使用刚好够大的合法牌，保留炸弹。",
+        yieldAt: 3,
+    },
+    1: {
+        id: "control",
+        label: "稳健控场",
+        description: "王总偏爱对子控节奏；对手接近出完时会提高牌权压力。",
+        yieldAt: 2,
+    },
+    2: {
+        id: "partnerFirst",
+        label: "搭档优先",
+        description: "小顾会在搭档只剩 4 张以内时主动让路，平时尽量低成本跟牌。",
+        yieldAt: 4,
+    },
+    3: {
+        id: "tempo",
+        label: "效率突围",
+        description: "林姐优先一次带走更多张数，但不会无故先交炸弹。",
+        yieldAt: 1,
+    },
+};
+function agentPersona(seat) {
+    return exports.AGENT_PERSONAS[seat];
+}
+/** Server-side policy instructions. Every agent may reason only from Observation. */
+function remotePersonaInstruction(id) {
+    const shared = "不得猜测或索要未提供的暗牌；不得故意放水、串通或为讨好某位玩家而降低合理牌力。";
+    if (id === "control")
+        return `你是“王总”的决策层：目标明确、节奏强、重视算牌证据和牌权，炸弹作为关键风险保险但不留到失去价值。${shared}`;
+    if (id === "partnerFirst")
+        return `你是“小顾”的决策层：优先为搭档保持牌权和接风路径，搭档接近出完时避免无意义盖牌，其余时候低成本跟牌。${shared}`;
+    if (id === "tempo")
+        return `你是“林姐”的决策层：优先整组出牌、减少碎牌并维持转换速度，但不在普通圈次无故先交炸弹。${shared}`;
+    return `你是零基础训练决策层：优先刚好够大的合法牌并保留关键牌力。${shared}`;
+}
+function observe(state, seat) {
+    const events = state.events
+        .filter((e) => e.type !== "deal")
+        .map((e) => ({ ...e, cardIds: e.type === 'round' ? undefined : e.cardIds ? [...e.cardIds] : undefined,
+        note: e.type === 'round' ? undefined : e.note }));
+    return {
+        seat,
+        role: state.players[seat].role,
+        persona: agentPersona(seat).id,
+        hand: state.players[seat].hand,
+        level: state.level,
+        turn: state.turn,
+        lastPlay: state.lastPlay,
+        counts: state.players.map((p) => p.hand.length),
+        events,
+    };
+}
+/** Frozen pre-expansion generator for reproducible head-to-head evaluation. */
+function legacyLegalMoves(o) {
+    const hand = o.hand, wild = hand.filter((c) => c.suit === "H" && c.rank === o.level), groups = new Map();
+    for (const c of hand)
+        groups.set(c.rank, [...(groups.get(c.rank) || []), c]);
+    const candidates = hand.map((c) => [c]);
+    for (const g of groups.values())
+        for (let n = 2; n <= Math.min(g.length, 10); n++)
+            candidates.push(g.slice(0, n));
+    for (let rank = 2; rank <= 14; rank++) {
+        const base = (groups.get(rank) || []).filter((c) => !wild.includes(c));
+        for (let size = 2; size <= 10; size++) {
+            const need = size - base.length;
+            if (base.length && need >= 0 && need <= wild.length)
+                candidates.push([
+                    ...base.slice(0, size - need),
+                    ...wild.slice(0, need),
+                ]);
+        }
+    }
+    const jokers = hand.filter((c) => c.suit === "J");
+    if (jokers.length === 4)
+        candidates.push(jokers);
+    const ranks = [...groups.keys()].filter((r) => r <= 14);
+    for (const tripleRank of ranks)
+        for (const pairRank of ranks) {
+            if (tripleRank === pairRank)
+                continue;
+            const a = (groups.get(tripleRank) || [])
+                .filter((c) => !wild.includes(c))
+                .slice(0, 3), b = (groups.get(pairRank) || [])
+                .filter((c) => !wild.includes(c))
+                .slice(0, 2), need = 5 - a.length - b.length;
+            if (a.length && b.length && need >= 0 && need <= wild.length)
+                candidates.push([...a, ...b, ...wild.slice(0, need)]);
+        }
+    const windows = [
+        [14, 2, 3, 4, 5],
+        ...[3, 4, 5, 6, 7, 8, 9, 10].map((start) => [0, 1, 2, 3, 4].map((i) => start + i)),
+    ];
+    for (const window of windows) {
+        const missing = window.filter((r) => !groups.get(r)?.length);
+        if (missing.length <= wild.length) {
+            const natural = window
+                .filter((r) => groups.get(r)?.length)
+                .map((r) => groups.get(r).find((c) => !wild.includes(c)) ?? groups.get(r)[0]);
+            candidates.push([...natural, ...wild.slice(0, missing.length)]);
+        }
+        for (const suit of ["S", "H", "C", "D"]) {
+            const suited = window
+                .map((r) => hand.find((c) => c.rank === r && c.suit === suit))
+                .filter(Boolean);
+            const need = 5 - suited.length;
+            if (need <= wild.length)
+                candidates.push([
+                    ...suited,
+                    ...wild.filter((c) => !suited.includes(c)).slice(0, need),
+                ]);
+        }
+    }
+    for (let start = 2; start <= 13; start++) {
+        const pair = [start, start + 1, start + 2].flatMap((r) => (groups.get(r) || []).slice(0, 2));
+        if (pair.length + wild.length >= 6)
+            candidates.push([
+                ...pair,
+                ...wild.filter((c) => !pair.includes(c)).slice(0, 6 - pair.length),
+            ]);
+        const plate = [start, start + 1].flatMap((r) => (groups.get(r) || []).slice(0, 3));
+        if (plate.length + wild.length >= 6)
+            candidates.push([
+                ...plate,
+                ...wild.filter((c) => !plate.includes(c)).slice(0, 6 - plate.length),
+            ]);
+    }
+    const seen = new Set();
+    return candidates
+        .filter((cs) => {
+        const ids = cs.map((c) => c.id).sort(), key = ids.join("|");
+        if (seen.has(key) || new Set(ids).size !== ids.length)
+            return false;
+        seen.add(key);
+        const combo = (0, rules_1.parseCombo)(cs, o.level);
+        return !!combo && (0, rules_1.beats)(combo, o.lastPlay?.combo ?? null);
+    })
+        .map((cs) => cs.map((c) => c.id));
+}
+/** Shared legal candidate source for live play and replay analysis.
+ * Up to eight cards the physical-card action space is exact; larger hands use
+ * bounded templates plus every legacy candidate. The rules core remains final.
+ */
+function legalMoves(o, coverage = 'play') {
+    const hand = o.hand;
+    const result = [];
+    const seen = new Set();
+    const add = (cards) => {
+        if (!cards.length || new Set(cards.map(card => card.id)).size !== cards.length)
+            return;
+        const key = cards.map(card => card.id).sort().join('|');
+        if (seen.has(key))
+            return;
+        seen.add(key);
+        const combo = (0, rules_1.parseCombo)(cards, o.level);
+        if (combo && (0, rules_1.beats)(combo, o.lastPlay?.combo ?? null))
+            result.push(cards.map(card => card.id));
+    };
+    if (hand.length <= 8) {
+        for (let mask = 1; mask < (1 << hand.length); mask++)
+            add(hand.filter((_, index) => (mask & (1 << index)) !== 0));
+        return result;
+    }
+    const byId = new Map(hand.map(card => [card.id, card]));
+    for (const ids of legacyLegalMoves(o))
+        add(ids.map(id => byId.get(id)));
+    const wilds = hand.filter(card => card.suit === 'H' && card.rank === o.level);
+    const naturals = hand.filter(card => !wilds.includes(card));
+    const cache = new Map();
+    const wildOptions = (count) => count === 0 ? [[]]
+        : count === 1 ? wilds.map(card => [card])
+            : count === 2 && wilds.length === 2 ? [[...wilds]] : [];
+    const rankOptions = (rank, count, suit) => {
+        const key = `${rank}|${count}|${suit ?? '*'}`;
+        const cached = cache.get(key);
+        if (cached)
+            return cached;
+        const available = naturals.filter(card => card.rank === rank && (!suit || card.suit === suit));
+        const minimum = Math.max(0, count - available.length);
+        const maximum = Math.min(count, wilds.length, coverage === 'analysis' ? 2 : minimum);
+        const options = new Map();
+        for (let used = minimum; used <= maximum; used++) {
+            const naturalCount = count - used;
+            const variants = naturalCount === 0 ? [[]] : [available.slice(0, naturalCount), available.slice(-naturalCount)];
+            for (const chosen of variants)
+                if (chosen.length === naturalCount)
+                    for (const wild of wildOptions(used)) {
+                        const cards = [...chosen, ...wild];
+                        options.set(cards.map(card => card.id).sort().join('|'), cards);
+                    }
+        }
+        const value = [...options.values()];
+        cache.set(key, value);
+        return value;
+    };
+    const minimumWild = (rank, count, suit) => Math.max(0, count - naturals.filter(card => card.rank === rank && (!suit || card.suit === suit)).length);
+    for (let rank = 2; rank <= 14; rank++)
+        for (let count = 2; count <= 10; count++) {
+            for (const cards of rankOptions(rank, count))
+                add(cards);
+        }
+    for (let triple = 2; triple <= 14; triple++)
+        for (let pair = 2; pair <= 14; pair++) {
+            if (triple === pair || minimumWild(triple, 3) + minimumWild(pair, 2) > wilds.length)
+                continue;
+            const triples = rankOptions(triple, 3), pairs = rankOptions(pair, 2);
+            for (const a of triples)
+                for (const b of pairs) {
+                    if (a.some(card => b.includes(card)))
+                        continue;
+                    add([...a, ...b]);
+                    if (coverage === 'play')
+                        break;
+                }
+        }
+    const straightWindows = [[14, 2, 3, 4, 5], ...Array.from({ length: 9 }, (_, index) => Array.from({ length: 5 }, (_, offset) => index + offset + 2))];
+    const shapes = [
+        { windows: straightWindows, each: 1 },
+        { windows: Array.from({ length: 11 }, (_, index) => [index + 2, index + 3, index + 4]), each: 2 },
+        { windows: Array.from({ length: 12 }, (_, index) => [index + 2, index + 3]), each: 3 },
+    ];
+    for (const suit of ['S', 'H', 'C', 'D'])
+        shapes.push({ windows: straightWindows, each: 1, suit });
+    for (const shape of shapes)
+        for (const window of shape.windows) {
+            if (window.reduce((total, rank) => total + minimumWild(rank, shape.each, shape.suit), 0) > wilds.length)
+                continue;
+            let emitted = 0;
+            const limit = coverage === 'play' ? 8 : Infinity;
+            const visit = (index, chosen) => {
+                if (emitted >= limit)
+                    return;
+                if (index === window.length) {
+                    add(chosen);
+                    emitted++;
+                    return;
+                }
+                for (const part of rankOptions(window[index], shape.each, shape.suit)) {
+                    if (part.some(card => chosen.includes(card)))
+                        continue;
+                    visit(index + 1, [...chosen, ...part]);
+                }
+            };
+            visit(0, []);
+        }
+    return result;
+}
+function chooseAiMove(o) {
+    const moves = legacyLegalMoves(o);
+    if (!moves.length)
+        return null;
+    const partner = ((o.seat + 2) % 4), persona = agentPersona(o.seat);
+    if (o.lastPlay?.seat === partner && o.counts[partner] <= persona.yieldAt)
+        return null;
+    const facts = (move) => {
+        const combo = (0, rules_1.parseCombo)(move.map((id) => o.hand.find((c) => c.id === id)), o.level);
+        return {
+            combo,
+            bomb: ["bomb", "straightFlush", "jokerBomb"].includes(combo.kind) ? 1 : 0,
+        };
+    };
+    return moves.sort((a, b) => {
+        const A = facts(a), B = facts(b);
+        if (persona.id === "control") {
+            const opponentThreat = o.counts.some((count, seat) => seat % 2 !== o.seat % 2 && count <= 2);
+            return (A.bomb - B.bomb ||
+                (opponentThreat
+                    ? B.combo.mainRank - A.combo.mainRank
+                    : Math.abs(a.length - 2) - Math.abs(b.length - 2)) ||
+                A.combo.mainRank - B.combo.mainRank ||
+                b.length - a.length);
+        }
+        if (persona.id === "tempo")
+            return (A.bomb - B.bomb ||
+                b.length - a.length ||
+                A.combo.mainRank - B.combo.mainRank);
+        return (A.bomb - B.bomb ||
+            A.combo.mainRank - B.combo.mainRank ||
+            b.length - a.length);
+    })[0];
+}
+function explainAgentMove(o, move, personaVerified = true) {
+    const persona = agentPersona(o.seat), name = o.seat === 1
+        ? "王总"
+        : o.seat === 2
+            ? "小顾"
+            : o.seat === 3
+                ? "林姐"
+                : "你", moves = legalMoves(o);
+    if (!move) {
+        const partner = ((o.seat + 2) % 4);
+        if (!moves.length)
+            return `${name}没有同型更大的合法牌，选择过牌。`;
+        if (!personaVerified)
+            return `${name} · LLM Agent（${persona.label}）选择合法过牌；本地规则已校验。`;
+        if (o.lastPlay?.seat === partner && o.counts[partner] <= persona.yieldAt)
+            return `${name}采用“${persona.label}”：搭档只剩 ${o.counts[partner]} 张、接近出完，因此让出牌权。`;
+        return `${name}采用“${persona.label}”：保留当前牌力，选择过牌。`;
+    }
+    const combo = (0, rules_1.parseCombo)(move.map((id) => o.hand.find((card) => card.id === id)), o.level);
+    if (!personaVerified)
+        return `${name} · LLM Agent（${persona.label}）选择合法出 ${move.length} 张牌；本地规则已校验。`;
+    if (combo && ["bomb", "straightFlush", "jokerBomb"].includes(combo.kind))
+        return `${name}采用“${persona.label}”：此时用炸弹争夺牌权。`;
+    if (persona.id === "control")
+        return `${name}采用“稳健控场”：用受控牌力维持牌权压力。`;
+    if (persona.id === "tempo")
+        return `${name}采用“效率突围”：这一手打出 ${move.length} 张牌。`;
+    if (persona.id === "partnerFirst")
+        return `${name}采用“搭档优先”：以较低成本行动并观察搭档。`;
+    return `${name}采用“训练建议”：优先使用刚好够大的合法牌。`;
+}
+async function safeAgentMove(policy, o, timeoutMs = 1500) {
+    return (await safeAgentDecision(policy, o, timeoutMs)).move;
+}
+async function safeAgentDecision(policy, o, timeoutMs = 1500) {
+    const legal = legalMoves(o), fallback = chooseAiMove(o);
+    let timer;
+    try {
+        const move = await Promise.race([
+            policy.choose(o, legal),
+            new Promise((_resolve, reject) => {
+                timer = setTimeout(() => reject(new Error("agent timeout")), timeoutMs);
+            }),
+        ]);
+        if (move === null)
+            return o.lastPlay
+                ? { move: null, source: "llm" }
+                : { move: fallback, source: "fallback" };
+        const key = [...move].sort().join("|");
+        return legal.some((m) => [...m].sort().join("|") === key)
+            ? { move, source: "llm" }
+            : { move: fallback, source: "fallback" };
+    }
+    catch {
+        return { move: fallback, source: "fallback" };
+    }
+    finally {
+        if (timer)
+            clearTimeout(timer);
+    }
+}
+exports.localTrainingAgent = {
+    name: "搭档协作 Agent v1",
+    choose: async (o) => chooseAiMove(o),
+};
+exports.compatibleRemoteAgent = {
+    name: "OpenAI 兼容 Agent",
+    choose: async (observation, moves) => {
+        const response = await fetch("/api/agent", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ observation, legalMoves: moves }),
+        });
+        if (!response.ok)
+            throw new Error("remote agent unavailable");
+        const data = (await response.json());
+        if (!Object.hasOwn(data, "move") ||
+            (data.move !== null && !Array.isArray(data.move)))
+            throw new Error("invalid remote agent response");
+        return data.move;
+    },
+};
+
+}
+};
+const loaded = {};
+function load(id) {
+  if (loaded[id]) return loaded[id].exports;
+  if (!Object.hasOwn(modules, id)) throw new Error('找不到模块：' + id);
+  const module = { exports: {} }; loaded[id] = module;
+  const localRequire = spec => {
+    const parts = id.split('/'); parts.pop();
+    for (const part of spec.split('/')) { if (part === '..') parts.pop(); else if (part !== '.') parts.push(part); }
+    return load(parts.join('/').replace(/\.js$/, ''));
+  };
+  modules[id](localRequire, module, module.exports);
+  return module.exports;
+}
+load('offline/main');
+})();</script>
+</body>
+</html>

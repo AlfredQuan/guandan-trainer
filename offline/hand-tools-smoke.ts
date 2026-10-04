@@ -1,0 +1,108 @@
+import assert from 'node:assert/strict';
+import { cardLabel, createDeck } from '../lib/game/cards';
+import { newGame, legalPlay } from '../lib/game/engine';
+import { parseCombo } from '../lib/game/rules';
+import { arrangeHand, findStraightFlushes, groupHandByCombos, groupSelectedCards, handGroupLabel, manualHandStacks, moveManualCard, moveManualColumn, pulledHand, stackHand } from './hand-tools';
+import type { Card, Rank, TrickPlay } from '../lib/game/types';
+
+const deck = createDeck();
+const take = (suit: Card['suit'], rank: number, copy = 0): Card => deck.find(c => c.suit === suit && c.rank === rank && c.deck === copy)!;
+const level = 9 as Rank;
+const base = [2, 3, 4, 5, 6].map(rank => take('S', rank));
+const baseCopy = [2, 3, 4, 5, 6].map(rank => take('S', rank, 1));
+const hand = [...base, ...baseCopy, take('D', 3)];
+const before = hand.map(c => c.id).join(',');
+const options = findStraightFlushes(hand, level, null);
+assert.equal(options.length, 1, '两副牌的同一可见牌型只需列出一种代表性拔牌方案');
+assert.ok(options.every(o => o.playable && o.ids.length === 5 && new Set(o.ids).size === 5));
+assert.equal(hand.map(c => c.id).join(','), before, '查找同花顺不能改变规则手牌');
+assert.deepEqual(findStraightFlushes(hand, level, null), options, '同局面顺序必须稳定');
+const rankOrder = arrangeHand(hand, level, 'rank');
+const suitOrder = arrangeHand(hand, level, 'suit');
+assert.equal(rankOrder.length, hand.length);
+assert.equal(suitOrder.length, hand.length);
+assert.deepEqual(rankOrder.map(c => c.id).sort(), hand.map(c => c.id).sort());
+assert.deepEqual(suitOrder.map(c => c.id).sort(), hand.map(c => c.id).sort());
+assert.notDeepEqual(rankOrder.map(c => c.id), suitOrder.map(c => c.id));
+assert.deepEqual(pulledHand(hand, level, 'suit', options[0]).slice(0, 5).map(c => c.id), options[0].ids);
+const rankStacks = stackHand(hand, level, 'rank');
+assert.deepEqual(rankStacks.map(group => group.cards.length), [2, 3, 2, 2, 2], '同点数不同花色及两副牌应归为一列');
+assert.equal(rankStacks[1].label, '3');
+assert.deepEqual(rankStacks.flatMap(group => group.cards.map(card => card.id)), rankOrder.map(card => card.id), '叠牌不得丢牌或更改顺序');
+const suitStacks = stackHand(hand, level, 'suit');
+assert.deepEqual(suitStacks.flatMap(group => group.cards.map(card => card.id)), suitOrder.map(card => card.id));
+assert.ok(suitStacks.some(group => group.label === '♠3' && group.cards.length === 2));
+assert.ok(suitStacks.some(group => group.label === '♦3' && group.cards.length === 1));
+assert.deepEqual(stackHand([], level, 'rank'), []);
+const manual = manualHandStacks(hand, level, null);
+assert.deepEqual(manual.flat(), rankOrder.map(c => c.id));
+const moved = moveManualCard(manual, base[0].id, take('D', 3).id);
+assert.deepEqual(manual.flat(), rankOrder.map(c => c.id), '手动移动不能修改原顺序');
+assert.equal(moved.flat().filter(id => id === base[0].id).length, 1);
+assert.equal(moved.flat().indexOf(base[0].id) + 1, moved.flat().indexOf(take('D', 3).id), '点击目标应将来源插到目标前');
+const separated = moveManualCard(moved, base[0].id, null);
+assert.deepEqual(separated.at(-1), [base[0].id], '单独成列应从原列抽走实体牌');
+const reversed = moveManualColumn(separated, separated.length - 1, -1);
+assert.deepEqual(reversed.at(-2), [base[0].id], '列头箭头可调整整列');
+const grouped = groupSelectedCards(manual, [base[0].id, base[1].id]);
+assert.deepEqual(grouped[0], [base[0].id, base[1].id], '所选实体牌应成为独立牌组');
+assert.deepEqual(grouped.flat().sort(), hand.map(c => c.id).sort(), '组牌不得丢牌或复制牌');
+assert.deepEqual(manual.flat(), rankOrder.map(c => c.id), '组牌不得修改原始展示');
+assert.deepEqual(manualHandStacks(hand.slice(1), level, [[base[0].id, base[1].id, base[1].id], ['invalid']]).flat().sort(), hand.slice(1).map(c => c.id).sort(), '过期、重复或非法 ID 必须剔除，新牌补齐');
+const verifyGroups = (cards: Card[], rank: Rank, expected: string) => {
+  const groups = groupHandByCombos(cards, rank);
+  assert.deepEqual(groups.flat().sort(), cards.map(c => c.id).sort(), '牌型理牌不能丢失或复制实体牌');
+  const byId = new Map(cards.map(card => [card.id, card]));
+  const labels = groups.map(ids => handGroupLabel(ids.map(id => byId.get(id)!), rank));
+  assert.ok(labels.includes(expected), `应识别${expected}，实际为${labels.join('、')}`);
+  assert.deepEqual(groupHandByCombos(cards, rank), groups, '相同手牌需稳定分组');
+};
+verifyGroups([take('S', 3), take('D', 3), take('C', 3), take('S', 7), take('D', 7)], level, '三带二');
+verifyGroups([take('S', 3), take('D', 3), take('C', 3), take('S', 4), take('D', 4), take('C', 4)], level, '二连三（钢板）');
+verifyGroups([2, 3, 4, 5, 6].map(rank => take('S', rank)), level, '同花顺');
+verifyGroups([take('S', 2), take('D', 3), take('C', 4), take('D', 5), take('S', 6)], level, '顺子');
+verifyGroups([2,3,4].flatMap(rank => [take('S', rank), take('D', rank)]), level, '三连对（木板）');
+verifyGroups([take('S', 3), take('D', 3), take('C', 3), take('H', 3)], level, '4张炸弹');
+verifyGroups([take('S', 3), take('D', 3), take('H', 9), take('S', 7), take('D', 7)], level, '三带二');
+verifyGroups([...base, ...baseCopy, take('D', 3)], level, '三连对（木板）');
+const replacementCase = [take('S', 3), take('D', 3), take('H', 6, 1), take('H', 6), take('S', 6), take('S', 2), take('H', 9, 1), take('H', 4), take('D', 5), take('C', 6)];
+const replacementGroups = groupHandByCombos(replacementCase, level);
+assert.equal(replacementGroups.length, 2, '逢人配应能替代已有自然牌，保留自然牌组成另一组');
+assert.deepEqual(replacementGroups.flat().sort(), replacementCase.map(card => card.id).sort());
+assert.deepEqual(replacementGroups.map(ids => handGroupLabel(ids.map(id => replacementCase.find(c => c.id === id)!), level)).sort(), ['三带二', '顺子']);
+
+const wild = take('H', 9);
+const fourPlusWild = [2, 3, 4, 5].map(rank => take('D', rank));
+const withWild = findStraightFlushes([...fourPlusWild, wild, take('S', 10)], level, null);
+assert.ok(withWild.some(o => o.suit === 'D' && o.wildCount === 1 && o.high === 6 && o.ids.includes(wild.id) && o.label.includes('代 6')), '2345+逢人配可声明 23456，且标明实际替代点数');
+assert.ok(withWild.some(o => o.suit === 'D' && o.high === 5 && o.ids.includes(wild.id)), '同一实体牌还可声明 A2345');
+const withAlternatives = findStraightFlushes([...base, wild], level, null);
+assert.ok(withAlternatives.some(o => o.high === 6 && o.wildCount === 1 && o.ids.includes(wild.id)), '即使已有自然牌，也可用逢人配替换以保留自然牌');
+for (const option of [...withWild, ...withAlternatives]) {
+  const actual = option.ids.map(id => [...fourPlusWild, ...base, wild, take('S', 10)].find(card => card.id === id));
+  assert.ok(actual.every(Boolean), '拔牌不得使用不在手里的实体牌');
+  assert.equal(option.label.split('（')[0], option.cards.map(cardLabel).join(' · '), '候选主标签只能列实际持有的牌');
+  assert.equal(parseCombo(option.cards, level, option.declaration)?.mainRank, option.high, '点选候选后声明的强度必须由规则引擎认可');
+}
+const aceLow = [14, 2, 3, 4, 5].map(rank => take('C', rank));
+assert.ok(findStraightFlushes(aceLow, level, null).some(o => o.high === 5), '应识别 A2345');
+const highCards = [10, 11, 12, 13, 14].map(rank => take('C', rank));
+const highCombo = parseCombo(highCards, level)!;
+const lastPlay: TrickPlay = { seat: 1, cardIds: highCards.map(c => c.id), combo: highCombo };
+assert.equal(findStraightFlushes([...base, ...aceLow], level, lastPlay).every(o => !o.playable), true, '弱同花顺不能压过更强的同花顺');
+assert.equal(findStraightFlushes([...base, ...highCards], level, lastPlay).some(o => o.playable), false, '同点数同花顺不能压牌');
+const doubleWild = [take('S', 10), take('S', 11), take('S', 12), take('H', 9), take('H', 9, 1)];
+assert.ok(findStraightFlushes(doubleWild, level, null).some(o => o.wildCount === 2 && o.high === 14), '两张逢人配可以补成 10JQKA');
+assert.equal(findStraightFlushes([take('S', 2), take('S', 3), take('S', 4), take('D', 5), take('C', 6)], level, null).length, 0, '无同花顺时不应误报');
+assert.equal(findStraightFlushes([], level, null).length, 0);
+for (let seed = 0; seed < 160; seed++) {
+  const randomLevel = (2 + seed % 13) as Rank;
+  const state = newGame(seed * 4, randomLevel);
+  const owned = new Map(state.players[0].hand.map(card => [card.id, card]));
+  for (const option of findStraightFlushes(state.players[0].hand, state.level, null)) {
+    assert.ok(option.cards.every(card => owned.get(card.id) === card), '菜单里每张必须是本人的实体牌');
+    assert.equal(parseCombo(option.cards, state.level, option.declaration)?.kind, 'straightFlush');
+    assert.equal(legalPlay(state, 0, option.ids, option.declaration).ok, true, '首出时点选候选须能通过最终出牌校验');
+  }
+}
+console.log('自动理牌与拔同花顺测试通过：实体牌守恒、逢人配声明、160 组随机级牌合法性及压牌判断');

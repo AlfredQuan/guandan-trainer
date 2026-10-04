@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:coverage
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: docker build -t guandan-lab:local .
+      - name: Verify the production doctor inside the runtime image
+        run: |
+          DOCTOR_SECRET=ci-doctor-random-secret-with-more-than-32-characters
+          report="$(docker run --rm \
+            -e SITE_URL=https://ci.guandan-lab.org \
+            -e SESSION_SECRET="$DOCTOR_SECRET" \
+            -e DATABASE_PATH=/data/ci.sqlite \
+            -e ONLINE_MATCHING_ENABLED=0 \
+            -e PAID_PROVIDERS_ENABLED=0 \
+            -e TRUST_PROXY=0 \
+            -e AI_ALLOW_PRIVATE_BASE_URL=0 \
+            guandan-lab:local node scripts/doctor.mjs --json)"
+          node -e 'const [raw,secret]=process.argv.slice(1); const report=JSON.parse(raw); if(!report.ready||raw.includes(secret)) process.exit(1)' "$report" "$DOCTOR_SECRET"
+      - name: Smoke-test persistent read-only container
+        run: |
+          cleanup() {
+            docker logs guandan-lab-ci 2>&1 || true
+            docker rm -f guandan-lab-ci >/dev/null 2>&1 || true
+            docker volume rm guandan-lab-ci-data >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          docker volume create guandan-lab-ci-data >/dev/null
+          docker run -d --name guandan-lab-ci --read-only --tmpfs /tmp -v guandan-lab-ci-data:/data \
+            -e DATABASE_PATH=/data/ci.sqlite -e SESSION_SECRET=ci-session-secret-with-more-than-32-characters \
+            -p 127.0.0.1:3000:3000 guandan-lab:local
+          ready=0
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null; then
+              ready=1
+              break
+            fi
+            if [ "$(docker inspect --format='{{.State.Running}}' guandan-lab-ci)" != "true" ]; then
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" = 1
+          test "$(docker inspect --format='{{.Config.User}}' guandan-lab-ci)" = node
+          test "$(docker inspect --format='{{.HostConfig.ReadonlyRootfs}}' guandan-lab-ci)" = true
+          curl --fail --silent --show-error http://127.0.0.1:3000/api/session | grep '"persistent":true'
+      - name: Smoke-test Compose env file
+        run: |
+          cp .env.example .env.local
+          sed -i 's/^SESSION_SECRET=.*/SESSION_SECRET=ci-compose-secret-with-more-than-32-characters/' .env.local
+          sed -i 's/^GOOGLE_CLIENT_ID=.*/GOOGLE_CLIENT_ID=ci-client/' .env.local
+          sed -i 's/^GOOGLE_CLIENT_SECRET=.*/GOOGLE_CLIENT_SECRET=ci-secret/' .env.local
+          sed -i 's/^ONLINE_MATCHING_ENABLED=.*/ONLINE_MATCHING_ENABLED=1/' .env.local
+          cleanup() {
+            docker compose -p guandan-ci down -v >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          docker compose -p guandan-ci up -d --no-build
+          ready=0
+          for attempt in {1..30}; do
+            response="$(curl --fail --silent --show-error http://127.0.0.1:3000/api/session || true)"
+            if echo "$response" | grep -q '"persistent":true'; then
+              echo "$response" | grep '"googleOAuth":true'
+              echo "$response" | grep '"onlineMatching":true'
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" = 1
